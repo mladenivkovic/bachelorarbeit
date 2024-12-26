@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# creates a plot of all potential files for clumps.
+# It also plots the particle's kinetic enery at their
+# distance from the center of mass
+# usage: phipart clump-nr outputdir
+
+errormsg="phiplot\nUsage: phiplot <clumpid> <srcdir>\nCreates a plot of the potentials. Needs mladen_phi*.txt files from output."
+# Reading command line args
+if [[ $# == 2 ]]; then
+    clump=$1
+    printf -v clumpfd "%05d" $clump
+    srcdir=$2
+    nphi=`ls $srcdir/mladen_phi_$clumpfd* | wc -l`
+    noutput=`ls $srcdir/mladen_particle* | wc -l`
+    $SCR/phipart-plot.py "$nphi" "$noutput" "$clump" "$srcdir"mladen_phi_$clumpfd*  "$srcdir"/before/mladen_part* "$srcdir"/mladen_part* "$srcdir"/mladen_clumpproperties_"$clumpfd".txt "$srcdir"mladen_cmp_$clumpfd*
+    #
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+
+
+
+

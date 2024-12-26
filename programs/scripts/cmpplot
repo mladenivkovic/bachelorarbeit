@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# creates a plot of all cumulative mass profile files for clumps.
+# usage: cmpplot clump-nr outputdir
+
+errormsg="cmpplot\nUsage: cmpplot <clumpid> <srcdir>\nCreates a plot of the potentials. Needs mladen_CMP*.txt files from output."
+# Reading command line args
+if [[ $# == 2 ]]; then
+    clump=$1
+    printf -v clumpfd "%05d" $clump
+    srcdir=$2
+    noutput=`ls $srcdir/mladen_phi_$clumpfd* | wc -l`
+    $SCR/cmpplot-plot.py "$noutput" "$clump" "$srcdir"mladen_cmp_$clumpfd* 
+    #
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+
+
+
+

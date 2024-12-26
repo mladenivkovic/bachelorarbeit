@@ -1,0 +1,77 @@
+\begin{table}[!htb]
+	{\footnotesize
+	\begin{centering}
+		\def\arraystretch{1.2}
+		\begin{tabular}[t]{l | R{1.7cm} |  R{1.7cm} |  R{1.8cm}  ||  R{1.7cm}  |  R{1.7cm}  |  R{1.8cm}  |}
+			%
+			%=======================
+			% DICE TWO 
+			%=======================
+			%
+			\cline{2-7}
+							& \multicolumn{6}{|c|}{\textbf{\dt-dataset} ($2.4 \cdot 10^5$ particles, 21.8$\%$ of which are in subhalos) } \\
+			\cline{2-7}
+							& \multicolumn{3}{|c||}{Sequential execution} & \multicolumn{3}{c|}{Parallel execution} \\
+			\cline{2-7}
+							&\ramses\	 & \phew    &  unbinding & \ramses  & \phew\      &  unbinding\\
+			\hline
+%			Wall time (s)	&	16.19    &	19.85  	 &	21.82	 &	 6.52	  & 	8.93  	 &	12.08	\\[-1.5ex]
+%							& +34.8 $\%$ & +9.9 $\%$ &	-		 & +85.3 $\%$ & +35.3 $\%$   &	-		\\[1.5ex]
+			CPU time (s)	&	16.18	 &	19.83	 &	21.81	 &	26.06	  &	35.71		 &	48.30	\\[-1.5ex]
+							& +34.8 $\%$ & +10.0 $\%$& -		 & +85.3 $\%$ & +35.3 $\%$   &  -		  \\[1.5ex]
+			PMUPC (Mb)		&	390.50	 &	401.37	 &	452.37	 &	396.76	  &	551.09	     &	572.54	\\[-1ex]
+							& +15.8 $\%$ & +12.7 $\%$& -		 & +44.3 $\%$ & +3.9 $\%$    &  -		\\
+			\hline
+			\multicolumn{7}{c}{}\\
+			%
+			%=======================
+			% DICE SUB 
+			%=======================
+			%
+			\cline{2-7}
+							& \multicolumn{6}{|c|}{\textbf{\ds-dataset} ($1.26 \cdot 10^6$ particles, 23.4$\%$ of which are in subhalos) } \\
+			\cline{2-7}
+							& \multicolumn{3}{|c||}{Sequential execution} & \multicolumn{3}{c|}{Parallel execution} \\
+			\cline{2-7}
+							&\ramses\	 & \phew    &  unbinding & \ramses\ & \phew\      &  unbinding \\
+			\hline
+%			Wall time (s)	&	56.77	 &	82.32	 &	88.41	 &	70.40	  &	 90.33	     &	111.24	\\[-1.5ex]
+%							& +55.7 $\%$ & +7.4 $\%$ &  -		 &+58.0 $\%$  & +23.1 $\%$   &  -   \\[1.5ex]
+			CPU time (s)	&	56.77	 &	82.31	 &	88.41	 &	281.60	  &	361.30		 &	444.93	\\[-1.5ex]
+							& +55.7 $\%$ & +7.4 $\%$ &	-		 &+58.0 $\%$  &	+23.1 $\%$   &	- 	\\[1.5ex]
+			PMUPC (Mb)		&	1313.36	 &	1358.45	 &	1562.06	 &	405.96	  &	565.26		 &	625.64	\\[-1ex]
+							& +18.9 $\%$ & +15.0 $\%$&   -		 & +54.1 $\%$ &+10.7 $\%$    &   -		\\
+			\hline
+			\multicolumn{7}{c}{}\\
+			%
+			%=======================
+			% COSMO 
+			%=======================
+			%
+			\cline{2-7}
+							& \multicolumn{6}{|c|}{\textbf{\cosmo-dataset} ($128^{3}$ particles, 9.0$\%$ of which are in subhalos) } \\
+			\cline{2-7}
+							& \multicolumn{3}{|c||}{Sequential execution} & \multicolumn{3}{c|}{Parallel execution} \\
+			\cline{2-7}
+							& \ramses	& \phew    &  unbinding & \ramses\ & \phew      &  unbinding\\
+			\hline
+%			Wall time (s)	&	-		&	-		&	-		&	95.94	 &	108.24	    &	112.12	\\[-1.5ex]
+%							&			&			&			& +16.9 $\%$ & +3.6 $\%$    & -			\\[1.5ex]
+			CPU time (s)	&	-		&	-		&	-		&	383.72	 &	432.93	  	&	448.46	\\[-1.5ex]
+							&   		&			&			& +16.9 $\%$ & +3.6 $\%$    & -			\\[1.5ex]
+			PMUPC (Mb)		&	-		&	-		&	-		&	1335.61	 &	1342.77		&	1526.65	\\[-1ex]
+							&			&			&			& +14.3 $\%$ & +13.7 $\%$   &	-		\\
+			\hline
+			\multicolumn{7}{c}{}
+		\end{tabular}
+	\end{centering}
+	} %footnotesize
+	\caption{%
+		Performance measurements for sequential and parallel executions on the three datasets used for tests. 
+		The parallel runs were executed on 4 cores. The CPU time of the parallel executions is the total CPU time of all 4 cores. ``\emph{PMUPC}'' stands for ``peak memory usage per core''.		
+		``\ramses'' measurements consist of advancing the simulation for a timestep. ``\phew'' runs do the same, but include clump finding, while ``unbinding'' runs include clump finding and particle unbinding.
+		The given values are the highest values out of 10 measurements. 
+		The percentages below the measurements give the relative additional cost of the unbinding run.
+	}%
+	\label{tab:resource-usage-measurements}%
+\end{table}

@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# this single will create a particle-clump-comparison plot for 
+# a single clump.
+# Usage: singleclump /path/to/output_00008/ <clumpid>
+# It will look for clump_00008.txt000** files as well as
+# mladen_clumpparticles.txt000** files.
+
+
+# Reading command line args
+if [[ $# == 0 ]]; then 
+    echo ""
+    echo "please specify an input directory. This script will look for clump_00008.txt000** files as well as mladen_clumpparticles.txt000** files"
+    echo "The second argument is the clump_id that you want singled out."
+    echo ""
+    exit
+elif [[ $# == 2 ]]; then
+    srcdir=$1
+    clmpid=$2
+elif [[ $# > 2 ]]; then
+    echo "I don't recognise your arguments."
+        exit
+fi
+
+workdir=$PWD
+#outputnumber=${srcdir:${#srcdir} - 5} 
+outputnumber='00008'
+allinonefile_phew="clump_""$clmpid"".txt"
+allinonefile_particles="particles_""$clmpid"".txt"
+
+
+
+#write clump data into one file
+
+echo "Writing clump data into one file (" "$allinonefile_phew" ")"
+
+cd $srcdir
+firstline=$(head -n 1 clump_"$outputnumber".txt00001)
+echo "$firstline" > "$workdir"/"$allinonefile_phew"
+
+grep "\s$clmpid\t*" clump_* >> "$workdir"/"$allinonefile_phew"
+
+
+
+
+echo "Writing particle data into one file (" "$allinonefile_particles" ")"
+firstline=$(head -n 1 mladen_particlecontrol.txt00001)
+echo "$firstline" > "$workdir"/"$allinonefile_particles"
+grep --no-filename "\s$clmpid$" mladen_particlecontrol.txt* >>  "$workdir"/"$allinonefile_particles"
+
+echo ""
+echo "Calling python plotting script"
+echo ""
+
+cd $workdir
+# call plotting script
+$SCR/singleclump-plot.py "$clmpid" "$allinonefile_phew" "$allinonefile_particles"

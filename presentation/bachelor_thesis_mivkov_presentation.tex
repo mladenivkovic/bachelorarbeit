@@ -1,0 +1,179 @@
+\input{./header.tex}
+
+
+
+%------------------------------------------------------------------
+%------------------------------------------------------------------
+%----------------VORLAGEN------------------------------------------
+%----------------VORLAGEN------------------------------------------
+%----------------VORLAGEN------------------------------------------
+%------------------------------------------------------------------
+
+%Bruch: \frac{}{}
+%Kleiner Bruch: \tfrac{}{}
+%Gleichungen: \begin{align}
+%Delta für partielle Ableitungen: \partial
+%Schönes Epsilon: \varepsilon
+
+%Strich: in align-Umgebung, \bar{} oder \overline{}
+%Seitenumbruch: \clearpage ; Besser als \newpage, da er floats zwingt, zuerst eingefügt zu werden.
+%Zu grosse Zeilenabstände wegen Formelzeichen? -> \vphantom{}, \smash{}
+%\newcommand{\BefehlName}[Anzahl_Parameter]{Definitiere neuen Befehl. Den ersten Parameter ruft man mit #1 ab, den zweiten mit #2 etc}
+
+%%FIGUR
+%\begin{figure}[htbp]
+%\centering
+%\includegraphics[width=15cm]{Bild1}%
+%\caption{Experimental set-up}%
+%\label{1}
+%\end{figure}
+
+%%BILD MIT PICINS NEBEN TEXT SETZEN
+%\piccaption{Caption\label{label}} 
+%\parpic[r]{\fbox{\includegraphics [width=5cm, keepaspectratio]{bild.png}}}
+%
+
+
+%% ZWEI BILDER NEBENEINANDER.
+%% Schau, dass die minipages insgesamt nie mehr als 1.0\textwidth haben.
+%% Um ein drittes oder viertes Bild einzufügen, ergänze einfach um weitere minipages.
+% \begin{figure}[!htb]
+% \centering
+%   \minipage{0.3\textwidth}
+%     \fbox{\includegraphics[height=2.5cm, keepaspectratio]{rsflipflop.png}}%
+%     \caption{RS-Flipflop}%
+%     \label{fig:rsflipflop}
+%   \endminipage\hspace{1cm}   
+% %
+%   \minipage{0.4\textwidth}
+%     \fbox{\includegraphics[height=2.5cm, keepaspectratio]{rsflipfloptakt.png}}%
+%     \caption{getaktetes RS-Flipflop}%
+%     \label{fig:rsflipfloptakt}
+%   \endminipage
+% \end{figure}
+
+
+
+%% TABELLEN
+%% 1) mit tabular
+%\begin{center}
+%\begin{tabular}[c]{|p{1cm}|p{3cm}|p{3cm}|p{3cm}|}
+%\hline
+%\multicolumn{2}{|c||}{Stromstärke 0.4A}	&	\multicolumn{2}{c|}{Stromstärke 0.6A}\\
+%\hline
+%$4T$ in s	&	$T'$		&	$4T$ in s	&	$T'$\\
+%\hline
+%7.1			&	1.775	&	7.1		& 	1.775\\
+%\hline
+%7.2			&	1.8		&	7.1		&	1.775\\
+%\hline
+%7.3			&	1.825	&	7.1		&	1.775\\
+%\hline
+%\end{tabular}
+%\end{center}
+%
+%% 2) Mit longtable
+%\begin{longtable}{p{3.5cm} p{11.5cm}}
+%  Blabla & Blabla\\ [2mm] <= Macht 2mm Abstand zwischen Zeilen
+%  %
+%  Blabla & Blabla \\ [2mm]
+%\end{longtable}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+\begin{document}
+
+% \begin{frame}[Overlay-Aktionen][Optionen]{Titel}{Untertitel}
+% 
+% Overlay-Aktionen
+%     Overlay-Aktionen setzen die Standard-Overlay-Aktionen aller Umgebungen innerhalb des Frames, welche Aktion-Spezifikationen erlauben. Dazu gehören u.a. \item bei Listen und Block-Umgebungen.
+% 
+%     <+->
+%         Sorgt dafür, dass die Elemente stückweise zum Vorschein kommen.
+% 
+% Optionen
+% 
+%     allowdisplaybreaks
+%         Sorgt durch Aufruf von \allowdisplaybreaks aus AMS-LaTeX für einen Seitenumbruch bei mehrzeiligen Formelumgebungen. Funktioniert nur im Zusammenhang mit der Option allowframebreaks
+%     allowframebreaks
+%         Passt der Inhalt nicht mehr auf ein Slide, wird er automatisch auf mehrere Slides verteilt. Allerdings ist somit kein Overlay mehr möglich.
+%     b,c,t
+%         Sorgt dafür, dass der Frame nach unten (b), zentriert (c) oder nach oben (t) ausgerichtet wird.
+%     fragile
+%         Wird für Quelltextumgebungen, z.B. verbatim, benötigt.
+%     label=name
+%         Legt einen Namen für ein Frame fest um es später mit \againframe{name} erneut aufrufen zu können.
+%     plain
+%         Unterdrückt die Anzeige der Überschrift, Fußzeile und Sidebar.
+%     squeeze
+%         Verkleinert die vertikalen Abstände so weit wie möglich um u.U. mehr auf der Folie unterbringen zu können.
+% 
+
+
+\begin{frame}{}
+	\titlepage
+\end{frame}
+
+%\begin{frame}{Outline}\label{tableofcontents}
+%   \tableofcontents
+%\end{frame}
+
+
+
+
+
+
+
+\section{Introduction}
+\input{./1-introduction}
+
+
+\section{PHEW}
+\input{./2-phew}
+
+\section{Datasets}
+\input{./3-datasets}
+
+\section{Unbinding Particles}
+\input{./4-unbinding}
+
+\section{Accounting for Neighbouring Structures}
+\input{./5-neighbours}
+
+\section{Iterative Clump Property Determination}
+\input{./6-iter}
+
+
+
+
+
+\begin{frame}
+	\frametitle{References}
+	\renewcommand*{\bibfont}{\footnotesize}
+	
+	\printbibliography
+\end{frame}
+
+\begin{frame}
+\end{frame}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}

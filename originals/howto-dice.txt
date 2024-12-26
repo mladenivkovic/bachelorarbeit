@@ -1,0 +1,9 @@
+Make sure to install GSL (Gnu scientific library) and
+FFTW3 first. (dev packages!)
+
+
+mkdir build
+cd build
+cmake .. -DENABLE_THREADS=ON -DCMAKE_INSTALL_PREFIX=/home/mivkov/UZH/Bachelorarbeit/bachelorarbeit/programs/compiled/
+make
+make install

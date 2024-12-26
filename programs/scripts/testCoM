@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# This script creates 3 plots, for the xy, yz and xz plane,
+# containing the particles of clumps which are not halo
+# namegivers, e.g. do not merge in itself.
+
+# Usage: testCoM <dir>
+# It will look for clump_00008.txt000** files as well as
+# mladen_particleoutput.txt000** files as well as 
+# mladen_COM.txt* files.
+
+# flags:
+# -s:   Singleclump. Will create a plot for each clump separately
+#       in the subdirectory CoM-output.
+
+
+# Reading command line args
+if [[ $# == 0 ]]; then 
+    echo ""
+    echo "please specify an input directory. This script will look for clump_00008.txt000** files as well as mladen_particleoutput.txt000** files as well as  mladen_COM.txt* files."
+    echo ""
+    exit
+elif [[ $# == 1 ]]; then
+    srcdir=$1
+    script=$SCR'/testCoM-plot.py'
+elif [[ $# == 2 ]]; then
+    srcdir=$2
+    case $1 in
+        -s)
+        script=$SCR'/testCoM-singleclump.py'
+        if [ ! -d 'CoM-output' ]; then
+            echo "Creating subdirectory 'CoM-output'"
+            mkdir 'CoM-output'
+        fi
+        ;;
+#
+#        -xyz)
+#        script=$SCR'/particle_clump_comparison-plot-xyz.py'
+#        ;;
+#        
+        *)
+        echo "I don't recognise your arguments. Use -s <dir> for singleclump output or <dir> for full output for all planes."
+        exit
+    esac
+else
+    echo "I don't recognise your arguments. "
+    exit
+fi
+
+#outputnumber=${srcdir:${#srcdir} - 5} 
+
+noutput=`ls $srcdir/mladen_COM* | wc -l`
+
+
+# create allinonefile for CoM because pyhton has trouble to concatenate 
+# if there is only one line
+echo "Writing COM allinone file"
+head -n 1 "$srcdir"/mladen_COM.txt00001 > mladen_COM-allinone.txt
+for i in "$srcdir"/mladen_COM.txt0*; do
+    lines=`cat $i | wc -l`
+    tail -n $(($lines-1)) $i >> mladen_COM-allinone.txt
+done
+
+python "$script" "$noutput" "$srcdir"/mladen_particleoutput* mladen_COM-allinone.txt
+
+
+
+

@@ -1,0 +1,41 @@
+This file contains a short description of the modules used in the
+clumpfinder subroutines (ramses/trunk/ramses/pm/clump_finder.f90)
+
+They are:
+- amr_commons
+- clfind_commons
+- hydro_commons
+- poisson_commons
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AMR_COMMONS     (ramses/trunk/ramses/amr/amr_commons.f90)
+    used to define various parameters.
+    uses module amr_parameters : there the following are defined:
+        - real types
+        - ndim (number of dimension)
+        - default values for run control and mesh parameters, step
+          parameters, output parameter, cosmology and physical
+          parameters etc.
+        - defines communications structure: type communicator
+
+CLFIND_COMMONS  (ramses/trunk/ramses/pm/clfind_commons.f90)
+    defines:
+        - peak communicator arrays
+        - sparse matrix for saddle points densities
+        - hash table variables
+        - peak patch properties
+        - cell above threashold properties
+
+HYDRO_COMMONS   (ramses/trunk/ramses/hydro/hydro_commons.f90)
+    defines hydro solver variables...?
+    
+
+POISSON_COMMONS (ramses/trunk/ramses/poisson/poisson_commons.f90)
+    only phi, rho
+    phi: 1dim-array for potential; real(dp)
+    rho: 1dim-array for density; real(dp)
+
+
+

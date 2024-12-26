@@ -1,0 +1,26 @@
+ERROR MESSAGES RAMSES/SLURM GIVES
+
+RAMSES ERROR MESSAGES  (found in logfile)
+
+
+    PARAMETER ERRORS
+
+    - levelmin is too big or too small for ic_files:
+        
+        coarser grid is not compatible with initial conditions file
+        Found    n1=         128  n2=         128  n3=         128
+        Expected n1=         256  n2=         256  n3=         256
+
+    - npartmax incorrect
+        Maximum number of particles incorrect
+        npartmax should be greater than     4000001
+        
+        Solution:
+        npartmax = Maximum number of particles that can be allocated during the run within each MPI process. The number of particles is nparttot resp. 2^(levelmin)  (1 particle per grid initially created). So calculate npartmax = ngridmax/ncpus.
+
+
+SLURM ERROR MESSAGES (found in slurm logfile)
+
+    - Mistyped something in .nml file:
+        
+        forrtl: severe (24): end-of-file during read, unit 1, file /home/uzh/mivkov/bachelorarbeit/workbench/ramses/execution/mladen-20160328-first-compilation-attempt/dmo.nml, line 41, position 0

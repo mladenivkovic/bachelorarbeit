@@ -1,0 +1,230 @@
+\section{The Unbinding Algorithm}\label{chap:my_code}
+
+The unbinding procedure begins after \phew\ has identified and merged all clumps.
+The main outline of the code is as follows:
+%
+\begin{itemize}[noitemsep,topsep=-1em]
+	\item 	Gather all particles that are in test cells that are not halo-namegivers and create a linked list of those particles. 
+			Then append the linked lists of substructure to their parent's linked lists.
+	\item Loop over all clump levels starting with the lowest.
+			For each clump of this level:%
+	\begin{itemize}[noitemsep,topsep=-1em]
+		\item Determine clump properties: centre of mass, clump mass, bulk velocity, particle furthest away from centre of mass
+		\item 	Compute the cumulative mass profile by binning the particles of that clump into mass bins
+		\item 	If neighbouring structures are considered: Find the shortest distance from each clump's centre of mass to any of its neighbours
+		\item 	Calculate the potential for this clump
+		\item Loop over this clump's particle linked list. 
+		If a particle is marked for examination, interpolate the potential at its position and check whether it is bound (condition \eqref{eq:boundv_corr}). 
+		If the particle is not bound and iterative clump property determination is not chosen or the bulk velocity of each clump has converged, mark the particle for examination in the clump's parent's linked list. Otherwise, mark it as ``not contributing to the clump properties'' and repeat the entire loop for this clump.
+	\end{itemize}
+\end{itemize}
+
+The listed parts are described in more detail below.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Particle Gathering and Linked Lists}
+
+To gather all particles which are in test cells, a loop over all test cells is performed.
+Test cells are always leaf cells, but particle linked lists exist only for octs.
+So in order to identify which particles of the entire oct are in the cell, for each test cell a loop over particle linked list of the oct it belongs to is performed and each particle examined whether it is located within the test cell. 
+If it is, the particle is considered to belong to the clump and the peak label of the test cell is stored for that particle.\\
+For all clumps that are not halo-namegivers, a linked list of all particles that belong to them is created, because halo-namegivers are not considered for particle unbinding.
+The linked list consists of three arrays: 
+For each peak patch, the first and the last particle of the linked list are stored, so that one can access the linked list at the start and append particles to the list, resp.
+The third array stores for each particle the particle that follows after it.
+%An earlier version of the particle linked list consisted of only two arrays, the first and the last particle, and the particles were stored in a derived data type that contained the particle information and the pointer to the next particle of the list.
+%For each new particle in a clump's linked list, a new space in memory was allocated and linked to the previous particle.
+%I removed this version because it was needlessly harder to work with as well as to manage the used memory.
+The linked lists will be used later to loop over only those particles that belong to a particular clump.\\
+Once the loop over all test cells is done, a loop over all clump levels is performed, starting with the lowest level.
+The linked lists of all clumps of that level are appended to the linked lists of their parent clumps.
+This is necessary because substructures, even though initially identified as separate structures, are still considered to be part of their parents, and it also enables to pass on unbound particles.
+
+
+
+
+
+
+
+
+
+
+\subsection{Determining Clump Properties}
+
+With established linked lists of particles of each clump, the properties of clumps can now be computed.
+Each MPI task computes the total mass, the bulk velocity (eq. \eqref{eq:vcom}) and the centre of mass for all clumps on their respective domain, including the virtual ones, by looping over each clump's particle linked list.
+The results are then collected with a sum operation across all tasks and the results scattered again to all virtual peaks. 
+(The exact bulk velocity and centre of mass are computed after these communications, because they require the total mass to be known.)\\
+If the clump properties are supposed to be determined iteratively, only particles marked as ``contributing'' will contribute to the properties. 
+Initially, all particles contribute and they are marked as ``not contributing'' in the unbinding step.
+After the clump properties are computed, all particles of the clump are marked as contributing again, so they can be unbound anew.\\
+In case the simulation uses periodic boundary conditions, a correction for every dimension individually is applied to particle with distances greater than half of the box length by shifting their position by a half of the box length closer, where the box length is the size of the total computational domain.\\
+Furthermore, with known centres of mass, the distance of the particle furthest away from the centre of mass is determined by looping over the particle linked lists again.
+Just like before each MPI task computes the maximal distance of the particles on its domain to their respective centres of mass. 
+The results are stored, communicated across tasks, the maximal value for each clump kept and scattered to the corresponding virtual peaks.
+From this point on, whether a clump should be considered for examination will be determined by whether the distance of the particle furthest away from the clump's centre of mass is greater than zero.
+It is a suitable condition because the value for said distance is initiated to zero and communicated to all virtual peaks, but it also ignores all clumps that consist  of only one particle%
+\footnote{
+	Even with a condition for a clump's minimal mass to be greater than one particle's mass, the clump does not necessarily contain more than one particle.
+	Due to the CIC interpolation scheme, the density of a cell also depends on the particles in neighbouring cells.
+	As a result, a cell can satisfy the overdensity condition without actually containing enough particles itself.
+}:
+It doesn't really make sense to examine whether a particle is bound to itself.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Determining the Cumulative Mass Profile}
+
+To compute each clump's cumulative mass profile, the distance from the centre of mass to the particle furthest away is divided into bins.
+The number of bins is a parameter that can be set manually.
+It also can be chosen whether to use linear or logarithmic bin distances.
+Linear distances are evenly spaced, so the outer boundary $r_i$ (with respect to the centre of mass) of the 
+$i-$th bin can be obtained with
+%
+\begin{equation}
+	r_i = i \cdot \frac{r_{max}}{n_{bins}}
+\end{equation}
+%
+where $r_{max}$ is the distance of the particle furthest away from the clump's centre of mass and $n_{bins}$ is the number of bins used.\\
+The bin widths for logarithmic binning distances grow exponentially in size with increasing distance from the centre of mass. %\footnote{
+%	Logarithmic distances are evenly spaced in logarithmic space:
+%	\begin{equation}
+%		\log(r_i) = \log(r_{min}) + i \cdot \frac{\log(r_{max}) - \log(r_{min}) }{n_{bins}}
+%	\end{equation}
+%}.
+The outer boundary $r_i$ of the $i-$th bin can be obtained with:
+%
+\begin{equation}
+r_i = r_{min}  \cdot \left(\frac{r_{max}}{r_{min}} \right) ^{\frac{i}{n_{bins}}}
+\end{equation}
+%
+The first bin is set to start at the distance $r_{min}$:
+\begin{align}
+	r_{min} = \frac{\text{boxlen}}{2^{\text{levelmax}}}
+\end{align}
+where \texttt{levelmax} is the deepest level of mesh refinement throughout the simulation and \texttt{boxlen} is the size of the entire computational domain.
+$r_{min}$ is chosen this way to represent the simulation's resolution.\\
+Again a loop over the particle linked lists is performed and the particle's mass deposited in the bin corresponding to their distance to the centre of mass of the clump they belong to.
+The masses in bins are summed with a collective communication and the result scattered across to the virtual peaks, yielding each clump's mass profile.
+Then each clump's mass bins are summed up starting from the bin closest to the centre of mass, resulting in cumulative mass profiles.
+
+Note that all particles assigned to a clump, even those previously marked as ``not contributing'' or as belonging to a substructure on a lower level, always contribute to the cumulative mass profile. 
+The mass profile nevertheless needs to be recomputed if clump properties are determined iteratively, because the centre of mass is expected to change with every iteration.
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Finding the Closest Saddle}
+
+In order to account for neighbouring structures, for each clump, the closest point from its centre of mass to any neighbouring clump must be found.
+This point is also called the ``closest saddle''.
+To find the closest saddle, a loop over all test cells is performed.
+For each cell, all its neighbouring cells are gathered on the level of the cell, of a level above and the level below (if it exists). 
+Then all neighbouring cells that are not leaf cells are discarded, because only leaf cells make up the peak patch cells.
+Furthermore, all neighbouring cells are ignored if they are either in the same clump as the test cells under investigation or in no clump at all.
+Then the connecting point between the test cell and its neighbour is calculated and its distance to the clump's centre of mass computed.
+The minimal distance is stored for each clump and communicated across MPI tasks.\\
+The routines to find the closest saddle are slightly modified routines that  are used already in \phew.
+
+
+
+
+
+
+
+
+\subsection{Computing the Potential}
+Each clump's gravitational potential is calculated according to eq. \eqref{eq:sol_phi}.
+The previously computed cumulative mass profile of the clump gives the enclosed mass $M(<r)$ needed for the integral.
+The integral is computed for every bin distance $r_i$.
+The precise value of the potential at each particle's position will later be interpolated by using the computed values of the two closest bin distances.
+
+First, the integral between each two neighbouring bins is computed and stored by using a simple trapezoidal rule:
+%
+\begin{equation}
+	\int\limits_{r_i}^{r_{i+1}} \de r \frac{G M(<r)}{r^2} \approx (r_{i+1} - r_i ) \cdot \frac12 \left( \frac{G M(<r_{i+1})}{r_{i+1}^2} + \frac{G M(<r_{i})}{r_{i}^2}    \right)
+\end{equation}
+%
+Then the potential can be inferred with
+%
+\begin{equation}
+	\phi(r_i) = \sum\limits_{j=i}^{N} \left(-\int\limits_{r_j}^{r_{j+1}} \de r \frac{G M(<r)}{r^2} \right) - \frac{GM_{tot}}{r_{N}}
+\end{equation}
+
+
+
+
+
+
+
+
+
+\subsection{Unbinding Particles}
+
+In order to do unbind particles, a loop over the clump's particle linked list is performed and each particle examined whether it satisfies condition \eqref{eq:boundv_corr}.
+To determine the potential $\phi$ a particle experiences, it first needs to be determined ``in which mass bin the particle is located''.
+Once that is known, the potential that the particle experiences is inferred with a linear interpolation. \\
+%
+Suppose a particle with distance $d$ from the centre of mass of the clump is ``in the bin'' $i$, which is to say $r_{i-1} < d < r_i$, where $r_i$ is the $i-$th cumulative mass binning distance.
+Since the potential at every binning distance $r_i$ has been calculated, the potential $\phi(d)$ that the particle experiences is interpolated with:
+%
+\begin{align}
+	\phi(d) = 	\left( \frac{ \phi(r_i) - \phi(r_{i-1})} {r_i - r_{i-1}}
+				\right) (d - r_{i-1}) + \phi(r_{i-1})
+\end{align}
+%
+The potential at the position of the closest saddle, $\phi_S$, is also calculated this way.\\
+
+
+If a particle is found to be unbound (doesn't satisfy condition \eqref{eq:boundv_corr}), one of two following things will happen.
+If iterative clump properties determination is chosen, unbound particles will be marked as ``not contributing''.
+After all particles of clumps of this level have been examined, the entire loop is repeated, starting with the determination of clump properties.
+This procedure is repeated until the bulk velocities of all clumps of this level are converged (or reach a manually set upper limit for the number of iterations).
+Clumps whose bulk velocity is converged are marked as such and not re-iterated over.
+Once the clump properties are converged, the actual removal of the unbound particles from clumps begins.
+If iterative clump properties determination is not selected, the code just skips the iteration part and jumps to this last step.\\
+If a particle is not bound, its peak label is changed to the clump's parent's peak label.
+%If it does satisfy it, the peak label is kept.
+Having the same peak label as the clump under investigation marks a particle for examination:
+The only way a particle can acquire a different peak label than the clump in whose linked list it is in is to be assigned to a substructure on a lower level first.
+%To keep the most possible informations on substructure, the peak label of the lowest level clump that the particle is bound to is kept. 
+Looping over the clump levels starting with the lowest level makes sure that each particle that is not assigned to a halo-namegiver is examined at least once.
+
+
+
+

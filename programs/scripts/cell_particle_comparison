@@ -1,0 +1,57 @@
+#!/bin/bash
+
+
+# If option -f was chosen:
+# This script will create a figure containing 3 plots:
+# One is particle position  output for particles which are in a clump,
+# the second is particle list plots and the third is both of those combined.
+
+# without flags: only the third plot will be made. (particle and clump together)
+
+# The standard is a plot of the x-y plane.
+# if you wand all planes instead, use flag -xyz
+
+
+# Usage: cell_particle_comparison /path/to/output_00008/
+# or: cell_particle_comparison -f /path/to/output_00008/
+# or: cell_particle_comparison -xyz /path/to/output_00008/
+# It will look for clump_map.csv* files as well as
+# mladen_clumpparticles.txt000** files.
+
+
+# Reading command line args
+if [[ $# == 0 ]]; then 
+    echo ""
+    echo "please specify an input directory. This script will look for clump_map.csv*** files as well as mladen_clumpparticles.txt000** files"
+    echo ""
+    exit
+elif [[ $# == 1 ]]; then
+    srcdir=$1
+    script=$SCR/cell_particle_comparison-plot.py
+elif [[ $# == 2 ]]; then
+    srcdir=$2
+    case $1 in
+        -f)
+        script=$SCR/cell_particle_comparison-plot-full.py
+        ;;
+
+        -xyz)
+        script=$SCR/cell_particle_comparison-plot-xyz.py 
+        ;;
+        
+        *)
+        echo "I don't recognise your arguments. Use -f <dir> for full output or <dir> for reduced output or -xyz <dir> for full output for all planes."
+        exit
+    esac
+else
+    echo "I don't recognise your arguments. Use -f <dir> for full output or <dir> for reduced output or -xyz <dir> for full output for all planes."
+    exit
+fi
+
+noutput=`ls $srcdir/clump_map* | wc -l`
+
+
+# call plotting script
+$script "$noutput" "$srcdir"/mladen_clumpparticles* "$srcdir"/clump_map*
+
+

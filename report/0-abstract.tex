@@ -1,0 +1,11 @@
+\begin{abstract}
+	\section*{Abstract}
+	\noindent The implementation of a particle unbinding algorithm into the adaptive mesh refinement (AMR) code \ramses, which uses the segmentation algorithm \phew\ to identify halos and their substructure in simulations of collisionless dark matter is presented.
+	Only particles initially assigned to subhalos are examined, particles of halos are assumed to be bound.
+	The algorithm follows the hierarchy of substructures as found by \phew\ and passes unbound particles on to the next higher level of substructure for examination.
+	Furthermore, it accounts for neighbouring structures by demanding a particle to be exclusively bound to the subhalo that is being investigated.
+	In order to increase the accuracy of the substructure's properties, they are determined iteratively by taking into account only bound particles.\\
+	%
+	The algorithm is fully parallel and uses the MPI library.
+	Its effects, accuracy and resource usage are shown on two highly idealistic datasets and a cosmological simulation.
+\end{abstract}

@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# A script to execute the phewplot-pythonplot.py script correctly.
+# It will create the plot of the phew output files as phewposplot_outputXXXXX.pdf, unless specified differently.
+# This script will look for 'halo_XXXXX.txt*' output files in a given directory.
+
+export xlabel='xlabel'
+export ylabel='ylabel'
+export title='title'
+export outputfilename='12345' #just something random to check if outputfilename is specified yet
+
+if [[ $# == 0 ]]; then # Reading command line args
+    echo ""
+    echo "please specify an input directory. This script will look for 'halo_00008.txt*' output files."
+    echo ""
+    echo "Usage:"
+    echo "phewposplot output_0000X"
+    echo "-o give output filename"
+    echo "-t give title for the graph"
+    echo "-x give xlabel for the graph"
+    echo "-y give ylabel for the graph"
+    exit
+fi
+
+while [[ $# -gt 0 ]]
+do
+    arg="$1"
+
+    case $arg in 
+        -h) #help
+        echo "phewposplot output_0000X"
+        echo "-o give output filename"
+        echo "-t give title for the graph"
+        echo "-x give xlabel for the graph"
+        echo "-y give ylabel for the graph"
+        exit
+        ;;
+        
+        -o) # give output filename
+        export outputfilename=$2
+        shift
+        ;;
+
+        -t) # specify title for graph
+        export title=$2
+        shift
+        ;;
+
+        -x) # specify xlabel for graph
+        export xlabel=$2
+        shift
+        ;;
+
+        -y) #specify ylabel for graph
+        export ylabel=$2
+        shift
+        ;;
+
+        *)
+        if [ -d $arg ]; then
+            export srcdir=$arg #specifying source directory where to look for PHEW output
+            if ls $srcdir/halo_*.txt* 1> /dev/null 2>&1 ; then
+                echo "found files"
+                outputnumber=${srcdir:${#srcdir} - 5} # The Ramses Output number.
+                if [[ "$outputfilename" == "12345" ]]; then
+                    export outputfilename=phewposplot_output"$outputnumber"
+                fi
+
+            else
+                echo "found no PHEW halo files."
+                exit
+            fi
+        else
+            echo "directory " $arg " not found."
+            exit
+        fi
+        ;;
+    esac
+
+    shift
+done
+
+
+#Creating one unified file of PHEW halo outputs
+
+cd $srcdir
+allinonefile=halo_"$outputnumber"-allinone.dat
+
+echo "Writing all halo data into file" "$srcdir"/"$allinonefile"
+
+
+firstline=$(head -n 1 halo_"$outputnumber".txt00001)
+echo $firstline > $allinonefile
+
+#linecount=1
+
+for phewfile in halo_*.txt*; do
+    tail --lines=+2 $phewfile >> $allinonefile #write all starting with second line
+    linenrs=`wc -l $phewfile | awk {'print $1'}`
+    echo "extracted" $(($linenrs - 1)) "lines from " $phewfile
+    #linecount=$(($linecount + linenrs -1))
+done
+
+
+filename="$srcdir"/"$allinonefile"
+echo $filename "now contains" `wc -l $allinonefile | awk {'print $1'}` "lines"
+#echo "it should contain" $linecount "lines"
+
+cd ..
+
+phewposplot-pythonplot.py "$filename" "$outputfilename" "$xlabel" "$ylabel" "$title"
+
+

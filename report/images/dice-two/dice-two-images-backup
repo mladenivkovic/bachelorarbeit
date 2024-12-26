@@ -1,0 +1,100 @@
+%\newgeometry{textwidth=247mm,textheight=160mm}
+\begin{landscape}
+
+%===============================
+% FULL RESULTS PARTICLES ONLY
+%===============================
+
+
+
+\begin{figure}[h]
+	\centering
+	\begin{subfigure}[t]{0.25\textwidth}
+		\includegraphics[width=\textwidth]{images/dice-two/dice-two-plot-halo1451-phew.png}
+		\caption{\phew\ segmentation}
+		\label{fig:dice-two-phew}
+	\end{subfigure}
+	%~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+	%(or a blank line to force the subfigure onto a new line)
+	%
+	%
+	%
+	\begin{subfigure}[t]{0.25\textwidth}
+		\includegraphics[width=\textwidth]{images/dice-two/dice-two-plot-halo1451-nosaddle.png}
+		\caption{Unbinding neglecting neighbours}
+		\label{fig:dice-two-nosaddle}
+	\end{subfigure}
+	%
+	%
+	%
+	%
+	%
+	\begin{subfigure}[t]{0.25\textwidth}
+		\includegraphics[width=\textwidth]{images/dice-two/dice-two-plot-halo1451-saddle.png}
+		\caption{Unbinding with neighbour correction}
+		\label{fig:dice-two-saddle}
+	\end{subfigure}
+	%
+	%
+	%
+	%
+	\begin{subfigure}[t]{0.25\textwidth}
+		\includegraphics[width=\textwidth]{images/dice-two/dice-two-plot-halo1451-iter.png}
+		\caption{Unbinding with neighbour correction and iterative properties determination}
+		\label{fig:dice-two-iter}
+	\end{subfigure}
+	%
+	%
+	\caption{Dice Two-Body Results}\label{fig:dice-two}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%===============================
+% HALO NAMEGIVER PARTICLES ONLY
+%===============================
+	
+	\begin{figure}[h!]
+		\centering
+		\begin{subfigure}[t]{0.32\textwidth}
+			\includegraphics[width=\textwidth]{images/dice-two/dice-two-halo-only-phew.png}
+			\caption{\phew\ segmentation}
+			\label{fig:dice-two-phew-halo-only}
+		\end{subfigure}
+		%~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+		%(or a blank line to force the subfigure onto a new line)
+		\begin{subfigure}[t]{0.32\textwidth}
+			\includegraphics[width=\textwidth]{images/dice-two/dice-two-halo-only-nosaddle.png}
+			\caption{Unbinding neglecting neighbours}
+			\label{fig:dice-two-nosaddle-halo-only}
+		\end{subfigure}
+		%~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+		%(or a blank line to force the subfigure onto a new line)
+		\begin{subfigure}[t]{0.32\textwidth}
+			\includegraphics[width=\textwidth]{images/dice-two/dice-two-halo-only-saddle.png}
+			\caption{Unbinding with neighbour correction}
+			\label{fig:dice-two-saddle-halo-only}
+		\end{subfigure}
+		%
+		\begin{subfigure}[t]{0.32\textwidth}
+			\includegraphics[width=\textwidth]{images/dice-two/dice-two-halo-only-iter.png}
+			\caption{Unbinding with neighbour correction and iterative properties determination}
+			\label{fig:dice-two-iter-halo-only}
+		\end{subfigure}
+		\caption{Dice Two-Body Results: Halo Namegiver particles only}\label{fig:dice-two-halo-only}
+	\end{figure}
+	
+	
+
+\end{landscape}

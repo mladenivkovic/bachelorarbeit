@@ -1,0 +1,41 @@
+# ignore all object and module files, ramses exec
+*.o
+*.mod
+ramses/trunk/ramses/bin_unbinding/ramses3d-mladen
+ramses/trunk/ramses/bin_dice/ramses3d-dice
+ramses/trunk/ramses/bin_clean/ramses3d-clean
+a.out
+*.pyc
+
+# directories
+misc/files_teyssier
+misc/print
+misc/source
+ramses/execution
+exec/run
+exec/files
+files/ic_files
+files/output
+exec/
+programs/compiled
+backup/
+files/results/dice-two/output
+files/results/dice-sub/output
+files/results/cosmo/output
+files/results/zoom
+files/zoom
+
+
+# latex stuff
+*.zip
+*.gz
+*.aux
+*.toc
+*.out
+*.log
+*.bbl
+*.bcf
+*.run.xml
+*blx.bib
+*.blg
+

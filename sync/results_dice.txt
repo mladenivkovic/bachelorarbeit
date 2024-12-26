@@ -1,0 +1,95 @@
+============
+NEIGHBOURS 
+============
+Galaxy 1 mass    1.000e+11 Msol       1000000 particles
+Galaxy 2 mass    2.000e+10 Msol        200000 particles
+Initial distance   164.5 kpc
+vmax = 0.1 vesc
+
+                                                 linear mass bins       logarithmic mass bins
+
+mass point potential    halo ptcls                976535                976535 
+                        subhalo ptcls             193537                193536
+                        unbound ptcls             0                     1
+
+                        total unbindings          0                     2
+                        total candidates          200620                200620
+
+
+
+poisson eq potential    halo ptcls                976535                976535
+                        subhalo ptcls             193537                193537
+                        unbound ptcls             0                     0
+
+                        total unbindings          0                     0
+                        total candidates          200620                200620
+
+
+
+
+
+
+===============
+NEIGHBOURS BIG
+===============
+Galaxy 1 mass    1.000e+13 Msol       2000000 particles
+Galaxy 2 mass    2.000e+12 Msol        400000 particles
+Initial distance   561.1 kpc
+Relative velocity  301.81 km/s
+vmax = 0.9 vesc
+
+                                                 linear mass bins       logarithmic mass bins
+
+mass point potential    halo ptcls                1959095               1962215
+                        subhalo ptcls             383229                380209
+                        unbound ptcls             14582                 17702
+
+                        total unbindings          15088                 18303
+                        total candidates          412246                412246
+
+
+
+poisson eq potential    halo ptcls                1952392               1944537
+                        subhalo ptcls             390042                397887
+                        unbound ptcls             7869                  0
+
+                        total unbindings          8126                  0
+                        total candidates          412246                412246
+
+
+
+==================
+DICE SUBSTRUCTURE
+==================
+Galaxy 1      mass  1.000e+12 Msol       200000 particles
+Galaxy 2,3,4  mass  1.000e+11 Msol        20000 particles
+Galaxy 5      mass  5.00e+12  Msol      1000000 particles
+Relative velocity   208.28 km/s (Galaxy 1 - 2/3/4)
+vmax = 0.9 vesc
+
+
+                                                 linear mass bins       logarithmic mass bins
+
+mass point potential    halo ptcls                      989754            988043
+                        unbd ptcls (halo)               29431             27720
+                        subhalo ptcls                   200080            201785
+                        unbound ptcls                   39925             40279
+                        subsubhalo1 ptcls               15549             15196
+                        subsubhalo2 ptcls               14987             14845
+                        subsubhalo3 ptcls               9236              9647
+
+                        total unbindings                85464             83762
+                        total candidates                334721            334761
+
+poisson eq potential    halo ptcls                      981937            960323
+                        assigned unbd ptcls (halo)      21614             0
+                        subhalo ptcls                   191166            177039 
+                        assigned unb ptcls              24823             583
+                        subsubhalo1 ptcls               19535             27381
+                        subsubhalo2 ptcls               18483             27644
+                        subsubhalo3 ptcls               19395             37129 
+
+                        total unbindings                59461             583
+                        total candidates                316857            280112
+
+

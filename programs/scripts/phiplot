@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# creates a plot of all potential files for clumps.
+# usage: phiplot clump-nr outputdir
+
+errormsg="phiplot\nUsage: phiplot <clumpid> <srcdir>\nCreates a plot of the potentials. Needs mladen_phi*.txt files from output."
+# Reading command line args
+if [[ $# == 2 ]]; then
+    clump=$1
+    printf -v clumpfd "%05d" $clump
+    srcdir=$2
+    noutput=`ls $srcdir/mladen_phi_$clumpfd* | wc -l`
+    $SCR/phiplot-plot.py "$noutput" "$clump" "$srcdir"mladen_phi_$clumpfd* 
+    #
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+
+
+
+

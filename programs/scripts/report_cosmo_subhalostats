@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Get difference for each subhalo for cosmo runs. 
+# Execute in ~/UZH/Bachelorarbeit/bachelorarbeit/files/results/cosmo/output
+
+
+script=$SCR'/report_cosmo_subhalostats.py'
+halo=0
+srcdir='iter'
+noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+npart=`find "$srcdir"  -maxdepth 1 -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+npart=$(($npart-$noutput))
+$script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/halo_* "$srcdir"/mladen_particleoutput* "saddle"/mladen_particleoutput* 

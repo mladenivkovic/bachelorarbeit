@@ -1,0 +1,144 @@
+\begin{appendices}
+\setcounter{equation}{0}
+\renewcommand{\theequation}{\Alph{section}.\arabic{equation}}
+
+\section{Glossary}\label{app:glossary}
+\begin{center}
+	\begin{tabular}[c]{p{3cm} p{12cm}}
+		closest saddle &
+			The closest point from a clump's centre of mass to any interface with any neighbouring clump.\\[.5em]
+		%
+		clump		& 
+			A peak patch that satisfies the relevance condition; A group of particles.\\[.5em]
+		%
+		halo		&
+			A gravitationally bound cosmological object.\\[.5em]
+		%	
+		halo-namegiver & 
+			A relevant clump that will never be merged into another clump, while other clumps may be merged into it. Its peak label will be the label of the entire halo.\\[.5em]
+		%
+		key neighbour &	
+			The neighbour of a peak patch that is connected by the key saddle.\\[.5em]
+		%
+		key saddle	& 	
+			The point of the saddle surface between two peak patches with the highest average density.\\[.5em]
+		%
+		leaf cells	&	
+			Cells which are not (further) refined\\[.5em]
+		%
+		oct			&	
+			Basic elements of the data structure in \ramses. A group of $2^{\text{ndim}}$ cells of same size.\\[.5em]
+		%
+		parent clump &	
+			The clump a clump will be merged into. \\[.5em]
+		%
+		peak		&	
+			A local density maximum.\\[.5em]
+		%
+		peak label	&	
+			An unique index assigned to each peak to identify it.\\[.5em]
+		%
+		peak patch	&	
+			Spatial section made of test cells that have been assigned to a particular peak.\\[.5em]
+		%
+		saddle		&	
+			The surface between two neighbouring peak patches \\[.5em] 
+		%
+		subhalo		&
+			A gravitationally bound object within a halo.\\[.5em]
+		%
+		task (MPI)	&
+			A unit of execution, e.g. a processor.\\[.5em]
+		%
+		test cells	&	
+			Leaf cells which have a density above an user-defined density threshold.\\[.5em]
+	\end{tabular}
+\end{center}
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Solution of the Poisson Equation for a Spherically Symmetric Case}\label{app:sol_phi}
+
+Consider a spherically symmetric clump of radius $r_{max}$ and total mass $M_{tot}$ such that $\rho(r > r_{max}) = 0$ and therefore $M_{tot} = \int_0^{r_{max}}\rho(r)\de r$.
+Furthermore, suppose that the first derivative $\frac{\del \phi}{\del r}$ exists at the point $r=0$ and chose $\phi (r \rightarrow \infty ) \equiv 0$ as a point of reference.\\
+The spherically symmetric Poisson equation can be written as:
+\begin{equation}
+	\frac{1}{r^2}\frac{\del}{\del r} \left( r^2  \frac{\del \phi}{\del r} \right) = 4 \pi G \rho(r)
+\end{equation}
+%
+Integrating the equation once with respect to $\mathrm{d}r$ from $0$ to $r$ gives
+\begin{align}
+	r^2 \frac{\del \phi}{\del r} - 
+	\underbrace{ 
+			\left[r^2 \frac{\del \phi}{\del r} \right]_{r=0}
+		}_ {=0}
+	 &= 4 \pi G \int\limits_0^r \rho(\tilde{r})\tilde{r}^2 \mathrm{d}\tilde{r} = G M(<r) \label{eqn:appendix1}
+\end{align}
+%
+Where $M(<r) = \int\limits_0^r 4 \pi \rho(\tilde{r})\tilde{r}^2 \mathrm{d}\tilde{r} $ is the mass enclosed by a sphere of radius $r$ such that $M_{tot} = M(<r_{max})$.
+Equation \ref{eqn:appendix1} shows that demanding $\frac{\del \phi}{\del r} |_{r=0}$ to be finite can be justified physically as $\frac{\del \phi}{\del r} \propto  M(<r)$ and one expects the enclosed mass $M(<r)\rightarrow 0$ for $r \rightarrow 0$.
+
+
+That leaves us with:
+%
+\begin{align}
+	\frac{\del \phi}{\del r} &= \frac{G M(<r)}{r^2}\\
+	%
+	\Rightarrow \ \phi(r) &= G \int\limits_0^{r} \frac{G M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r} + \phi_0 \label{eq:phifirst}
+\end{align}
+%
+An expression for $\phi_0$ is found by using the boundary condition $\phi (r \rightarrow \infty) = 0$:
+\begin{align}
+	\phi(r \rightarrow \infty) &= G \int\limits_{0}^{\infty} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r} + \phi_0\\
+	%
+	&=G \int\limits_{0}^{r_{max}} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r}
+		+ G \int\limits_{r_{max}}^{\infty} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r} 
+		+ \phi_0  \label{eq:integral_outside}\\
+	%
+	&=G \int\limits_{0}^{r_{max}} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r}
+	+ G  \frac{M_{tot}}{r_{max}} + \phi_0\\
+	%
+	&= 0 \\
+	%
+	\Rightarrow \phi_0 &= - G \int\limits_{0}^{r_{max}} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r}
+	- G  \frac{M_{tot}}{r_{max}} \label{eq:phinull}
+\end{align}
+%
+For the second integral in equation \eqref{eq:integral_outside} it was used that for all $r\geq r_{max}$ the enclosed mass remains constant: $M(<r)|_{r\geq r_{max}} = M_{tot}$:
+%
+\begin{align}
+	\int\limits_{r_{max}}^{\infty} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r} &=
+		\int\limits_{r_{max}}^{\infty}\frac{M_{tot}}{\tilde{r}^2} \mathrm{d}\tilde{r}
+		%= M_{tot} \int\limits_{r_{max}}^{\infty}\frac{1}{\tilde{r}^2} \mathrm{d}\tilde{r}
+		= M_{tot} \left[-\frac{1}{\tilde{r}} \right]_{\tilde{r}=r_{max}}^{\tilde{r}=\infty}
+		= \frac{M_{tot}}{r_{max}}
+\end{align}
+
+Plugging equation \eqref{eq:phinull} into \eqref{eq:phifirst} yields:
+\begin{align}
+	\phi(r) &= G \int\limits_0^{r} \frac{G M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r} - G \int\limits_{0}^{r_{max}} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r}
+	- G  \frac{M_{tot}}{r_{max}}\\
+	%
+	&= - G \left( 
+				\int\limits_{0}^{r_{max}} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r}
+				-
+				\int\limits_0^{r} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r}
+			\right)
+		- G  \frac{M_{tot}}{r_{max}} \\
+	%
+	&= - G \int\limits_{r}^{r_{max}} \frac{M(<\tilde{r})}{\tilde{r}^2} \mathrm{d}\tilde{r}
+	- G  \frac{M_{tot}}{r_{max}}
+\end{align}
+
+
+
+\end{appendices}

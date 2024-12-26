@@ -1,0 +1,99 @@
+\section{Introduction}
+
+\subsection{Halo Finding}
+
+With growing processing power and the use of parallel computing tools, numerical codes designed for the simulation of cosmic structure are not only highly reliable and cost effective, but much larger and more elaborate simulations are becoming possible. 
+In order to compare the results of cosmological simulations to observations of the Universe, the simulation  data needs to be analysed. 
+For simulations of collisionless dark matter in particular, an important  tool for problems concerning cosmic structure and its formation is the identification of \emph{halos}, i.e. gravitationally bound objects made of particles as well as their internal structure and bound objects nested within them, called \emph{subhalos}. 
+Codes that perform this task are called ``\emph{halo-finders}''.\\ 
+While the simplest way to define a halo would probably be as a ``gravitationally bound object'', such a definition is ambiguous. 
+Whether a particle is gravitationally bound to an object depends on the mass of said object, so removing unbound particles might lead to even more unbound particles since it reduces the object's mass.
+This is particularly important for subhalos, which usually consist of much less particles than their hosts.
+Additionally, another question is how to treat the nested subhalos:
+Do their properties like mass and momentum contribute to the properties of the host, or are subhalos completely separate structures?\\
+Yet another difficulty with subhalos is a definition of their edge.
+Usually, the edge of a halo is defined by some requirement of overdensity, but even that is ambiguous: 
+the overdensity is the product of a parameter and a reference density. 
+One might choose varying parameters as well as differing reference densities according to different theoretical models or applications.
+This makes the definition of the edge of subhalos even more difficult: How exactly should the edge of subhalos be defined, which are not in isolation, but located within the host's density field?
+How does one distinguish between substructure and statistical noise of a density field?
+There is no unique answer to these questions, as different problems and applications make use of different definitions \parencite{soa}. 
+
+
+
+A further requirement for substructure-finding is the removal of energetically unbound particles, i.e. assigning a particle originally located within a substructure to the parent structure based on an energy criterion. 
+This applies recursively to any level of substructure within substructure. 
+Such a hierarchical clustering of matter is expected due to self gravity.
+It is customary to treat all particles assigned to a halo as bound to it, even though from a strict energetic perspective they are not, thus particle unbinding may not be necessary for halos, but it is vital for subhalos. 
+Subhalos are by definition located within a host halo and are therefore expected to be contaminated by the host's particles.
+Considering that substructure often contains far less particles than their hosts, blindly assigning particles to it without an unbinding procedure can influence its physical properties significantly. 
+
+
+
+
+
+\subsection{Halo- and Subhalo-Finders}
+
+Over the last decades, a multitude of halo finding tools has been introduced.
+The Halo-Finder Comparison Project \parencite{MAD} lists 29 different codes in the year 2010 and roughly divides them into two distinct groups of codes:
+%
+\begin{enumerate}
+	\item particle collector codes, where particles are linked together
+	\item density peak locator codes, that first find density peaks and then collect particles around those.
+\end{enumerate}
+%
+Particle collector codes most commonly use some form of the ``\emph{Friends-of-Frieds}'' (FOF) method \parencite{FOF}.
+Groups are identified by linking ``friends'' together, i.e. particles that are closer to each other then some specified linking length.
+A particle belongs to a group if it has friends within this group. 
+This implicitly determines some minimal density for the halos found this way.
+The particles may be linked either in 3D space or in 6D phase space.
+The advantage of phase space finders like \texttt{ROCKSTAR} \parencite{rockstar} is that they are able to identify halo centres even if they overlap with another object.
+
+Density peak locator codes identify halos and subhalos around previously found peaks in the mass density field.
+One frequently used method to identify halos in such manner is the ``\emph{Spherical Overdensity}'' (SO) method \parencite{SO}. 
+The basic idea is to find groups of particles by growing spherical shells around those peaks until the mean overdensity of the sphere falls below some threshold.\\
+But there are also other approaches: \phew\ \parencite{PHEW} for example, which will be discussed in greater detail in section \ref{chap:phew}, assigns cells (not particles) to density peaks following the steepest density gradient.
+Unlike the SO method, this allows to identify halos without the assumption of spherical symmetry.
+
+
+Various techniques to identify unbound particles within the found structures are used as well.
+Because removing particles from a structure changes said structures properties, often iterative approaches are used.
+\texttt{AHF} \parencite{AHF}, \texttt{ASOHF} \parencite{ASOHF} and \texttt{SUBFIND} \parencite{subfind} for example remove all unbound particles from a halo, recompute the potential and repeat the procedure until no more particles are removed.
+Unbound particles are then passed from subhalos on to host halos (or host subhalos) for examination.
+\texttt{SKID} \parencite{skid} however only removes the particle with the highest energy per iteration.
+
+
+
+
+
+
+
+\subsection{On-the-fly Analysis}
+
+While bigger simulations can yield more precise data, they also produce large amounts of data which needs to be stored and post-processed effectively.   
+This creates a variety of issues.
+On one hand there is a possibility that not all produced simulation data can be stored because it is simply too large. 
+Another issue is that most modern astrophysical simulations are executed on large supercomputers which offer large distributed memory. 
+Post-processing the data they produce may also require just as much memory, so that the analysis will also have to be executed on the distributed memory infrastructures.
+The reading and writing of a vast amount of data to a permanent storage remains a considerable bottleneck, particularly so if the data need to be read and written multiple times.\\
+%
+One way to reduce the computational cost is to include analysis tools like halo-finders in the simulations and run them ``\textit{on-the-fly}'', i.e. run them during the simulation. 
+This allows to store only the interesting parts and regions instead of the full raw data. 
+A caveat of this method is that the halo-finder should be ``fast enough'' with respect to the execution time of the simulation.
+An advantage, on the other hand, is that it offers the option to implement the results of the halo-finders into the simulation and further analysis.
+
+The segmentation algorithm \phew\ implemented in \ramses\ \parencite{ramses} is precisely such an analytical tool which allows an on the fly analysis of the simulation domain. 
+In this thesis a newly developed particle unbinding code designed to work on-the-fly within the framework of \phew\ and \ramses\ is presented.
+
+This thesis is structured as follows. 
+In the next chapter \ramses, \phew\ and their parallel implementation with emphasis placed on aspects of the codes that are closely related and necessary for the unbinding code are described shortly. 
+Then physical aspects of particle unbinding are discussed.
+For the sake of clarity, there is a small glossary in appendix \ref{app:glossary}.
+In chapter \ref{chap:my_code} a detailed description of the unbinding code is given. 
+Chapter \ref{chap:datasets} introduces the datasets on which the unbinding code will be run on.
+The results of different available unbinding methods, the accuracy in dependence of parameters and the resource usage of the code are given in chapter \ref{chap:results}, followed by a conclusion in chapter \ref{chap:conclusion}.
+
+
+% on the fly:S Data sizes. Siehe http://www.aanda.org/articles/aa/pdf/2014/04/aa22555-13.pdf
+
+

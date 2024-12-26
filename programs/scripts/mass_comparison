@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# This script will create a figure containing 2 histograms:
+# One is the particle-sum mass of a clump, the other is the
+# clump mass calculated by ramses for each relevant peak.
+
+# Usage: mass_comparison /path/to/output_00008/
+# It will look for a mladen_masscomparison.txt file inside that directory
+
+
+# Reading command line args
+if [[ $# == 0 ]]; then 
+    echo ""
+    echo "please specify an input directory. This script will look for a mladen_masscomparison.txt file inside that directory"
+    echo ""
+    exit
+elif [[ $# == 1 ]]; then
+    srcdir=$1
+else
+    echo "I can't handle more then one command line argument."
+    exit
+fi
+
+inputfile="$1"/mladen_masscomparison.txt
+# call plotting script
+$SCR/mass_comparison-plot.py "$inputfile"
+

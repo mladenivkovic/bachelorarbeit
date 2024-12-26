@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# creates a plot of all potential files for clumps.
+# usage: phiplot clump-nr outputdir
+
+errormsg="phiplot\nUsage: phiplot <clumpid>\nCreates a plot of the potentials recursively for masspt/linbins, masspt/logbins, poisson/linbins and poisson/logbins directories.\nNeeds mladen_phi*.txt files from output."
+# Reading command line args
+if [[ $# == 1 ]]; then
+    clump=$1
+    printf -v clumpfd "%05d" $clump
+    $SCR/phiplot_all-plot.py  "$clump" masspnt/linbins/output_00001/mladen_phi_"$clumpfd"* masspnt/logbins/output_00001/mladen_phi_"$clumpfd"*   poisson/linbins/output_00001/mladen_phi_"$clumpfd"* poisson/logbins/output_00001/mladen_phi_"$clumpfd"* 
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+
+
+
+

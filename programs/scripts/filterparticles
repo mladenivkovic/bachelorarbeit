@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#Filters out particles of mladen_particleoutput* files according to a
+#Usage: filterparticles <dir>
+
+
+errormsg="filterparticles\nUsage: filterparticles <srcdir>\nFilters out particles."
+# Reading command line args
+if [[ $# == 1 ]]; then
+    #clump=$1
+    #printf -v clumpfd "%05d" $clump
+    srcdir=$1
+    #nphi=`ls $srcdir/mladen_phi_$clumpfd* | wc -l`
+    noutput=`ls $srcdir/mladen_particle* | wc -l`
+    $SCR/filterparticles.py "$noutput" "$srcdir"/mladen_part* 
+    #$SCR/filterparticles.py "$noutput" "$srcdir"/before/mladen_part* 
+    #
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+
+
+
+

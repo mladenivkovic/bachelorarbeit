@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --mem=64000
+#SBATCH -n 16 -t 00:10:00
+#SBATCH -p debug
+#SBATCH --job-name='unbind'
+
+
+export DATE=`date +%F_%Hh%M`
+
+srun -n 16 ./ramses3d-mladen unbinding.nml > run$DATE.log
+

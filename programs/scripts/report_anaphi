@@ -1,0 +1,35 @@
+#!/bin/bash
+
+
+# Calculate, analyse and plot the potentials of a subclump in dependance of the number of
+# bins used
+# creates a plot of all cumulative mass profile files for clumps.
+# It does it recursively for masspt/linbins, masspt/logbins, poisson/linbins and poisson/logbins directories.
+# usage: report_anaphi 
+
+# Execute in /home/mivkov/UZH/Bachelorarbeit/bachelorarbeit/files/results/dice-two/binning
+
+
+errormsg="report_anaphi\nUsage: report_anaphi  \nAnalyses potential profiles. Needs mladen_phi*.txt files from output. Execute in /home/mivkov/UZH/Bachelorarbeit/bachelorarbeit/files/results/dice-two/binning"
+
+
+
+# Reading command line args
+
+clump=4220
+
+if [[ $# == 0 ]]; then
+    printf -v clumpfd "%05d" $clump
+    nlin=`ls -l lin/mladen_phi_* | wc -l`
+    nlog=`ls -l log/mladen_phi_* | wc -l`
+    $SCR/report_analyse_phi.py  "$clump" $nlin $nlog lin/mladen_phi_"$clumpfd"* log/mladen_phi_"$clumpfd"* | tee phi_analysis.txt
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+
+
+
+

@@ -1,0 +1,67 @@
+%=======================
+% Header
+%=======================
+\input{./header}
+
+
+
+
+
+
+
+%=======================
+% Document
+%=======================
+\begin{document}
+	
+	%--------------------------------------------
+	% Stuff that needs to be done before all else
+	%--------------------------------------------
+	%\pagestyle{plain}
+	\nocite{*} % show all entries of bibliography, even if they are not cited.
+	
+	%-------------
+	% Titlepage
+	%-------------
+	
+	\input{title}
+	
+	%-----------------
+	% Actual content
+	%-----------------
+	\input{0-abstract}
+	\input{1-introduction}
+	\input{2-theory}
+	\input{3-my_code}
+	\input{4-datasets}
+	\input{5-results}
+	\input{6-conclusion}
+	
+	
+	
+	
+	
+	
+	
+	%--------------
+	%Bibliography
+	%--------------
+	%https://www.sharelatex.com/learn/Bibliography_management_in_LaTeX
+	%\medskip % or: \bigskip to add some space
+	
+	
+	\printbibliography[heading=bibintoc]
+	%DONT FORGET TO COMPILE THE BIBLIOGRAPHY WITH BIBTEX WHEN CHANGES ARE MADE.
+	%\printbibliography[heading=bibintoc,title={Set some title instead of "References"}]
+	%if heading=bibintoc: set references in table of contents
+	
+	
+	
+	%-----------
+	% APPENDIX
+	%-----------
+	\include{appendix}
+	%\clearpage
+
+
+\end{document}

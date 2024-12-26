@@ -1,0 +1,50 @@
+\section{Conclusion}\label{chap:conclusion}
+
+
+A particle unbinding algorithm for the halo-finder \phew\ of the N-body simulation code \ramses\ was introduced and the effects of three different unbinding methods were demonstrated (table \ref{tab:unbinding_results}), which are:
+\begin{enumerate}
+	\item simple unbinding of particles which don't satisfy an energy condition (right column of fig. \ref{fig:dice_two_results_a}, \ref{fig:dice_sub_results_a} and \ref{fig:cosmo_results_a})
+	\item exclusive unbinding, considering that particles can wander off into neighbouring structures (left column of fig. \ref{fig:dice_two_results_b}, \ref{fig:dice_sub_results_b} and \ref{fig:cosmo_results_b}), and 
+	\item exclusive unbinding, where additionally the structure properties are determined iteratively using the remaining (bound) particles (right column of fig. \ref{fig:dice_two_results_b}, \ref{fig:dice_sub_results_b} and \ref{fig:cosmo_results_b}).
+\end{enumerate}
+
+The simple unbinding was already able to smooth out parent structures, which were previously cut off cleanly by \phew\ and in artificially set up, highly idealistic cases, both halo and substructures partially regained their original form.\\
+Exclusive unbinding removed most of the substructure particles, leaving only a ``core''.
+This method is clearly not suitable to preserve most of substructure information, but could be useful to track the evolution of substructure  through time, which is currently not possible with \phew\footnote{
+	This has not been tested yet and might be subject of future work.	
+}.\\
+The iterative determination of clump properties leads to overall less unbound particles in each case, but still most particles were unbound.
+In some cases like shown in fig. \ref{fig:cosmo_results}, subhalos were found to have no exclusively bound particles.
+The iterative clump properties determination of the code as presented in this thesis can't improve such situations.
+If required, it might be worth considering first to determine the clump properties of these subhalos iteratively and only then applying the correction for neighbouring structures.\\
+What might also further improve the results would be a better way to calculate the gravitational potential that the particles experience.
+Currently, the unbinding algorithm introduces the assumption of spherical symmetry to calculate the potential, thus partly ignores the shape of the clumps identified by \phew.
+
+
+The algorithm works on-the-fly and is fully parallel, using the MPI library.
+Its additional resource usage (table \ref{tab:resource-usage-measurements}) seems acceptable, particularly so with decreasing relative amount of particles that are assigned to substructure.
+If necessary, the code might be sped up by fully vectorising it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section*{Acknowledgements}
+
+I want to thank Prof. Teyssier for his guidance and support for this thesis;
+I want to express my gratitude to the lovely people from the ICS for their help in various matters, in particular to Dr. Andreas Bleuler and Dr. Valentin Perret; And I want to thank my family and friends for their support, love and patience.
+
+
+
+
+

@@ -1,0 +1,333 @@
+NOTES ON SCRIPTS AROUND RAMSES AND HOW TO USE THEM
+
+
+- HOP
+    An (old) halo finder algorithm. Can be found in /utils/f90. Compile it 
+    via make, modify makefile if necessary. 
+    
+    Execute script_hop.sh.
+
+    If you only want to execute hop on a specific output, like output_00007, 
+    type in "script_hop.sh 7". (The output directory must be in the same
+    directory as script_hop.sh)
+
+    Output:
+    HOP creates a directory hop.
+    hop/*.den: This file contains the halo densities.
+
+    hop/*.pos: This file contains the position and basic properties of halos.
+        Legend: npart = number of particles
+                xc, yc, zc: x-, y-, z-coordinates
+                uc, vc, zc: 
+
+
+- script_hop.sh
+    A script to execute the hop algorithm on ramses output.
+    Usage:
+    script_hop <outputnr> <sourcedir>
+    <outputnr>: specify which output to run through. E.g. script_hop.sh 7 will
+    work with output_00007
+    <sourcedir> : optional. Specify the directory where the ramses output
+    directories are located.
+
+
+- part2map
+    Visualising tool (for hop halo finder output). Can be found in /utils/f90.
+    Execute part2map without command line arguments to see help.
+    It projects a particle map along an axis of sight. Per default it takes the
+    z axis and projects what you would "see" on the x-y-plane.
+    
+    If projecting mass, it will sum up all the mass in a pixel.
+    If projecting density, it will show the densest particle in every pixel.
+
+    Add -den /path/to/hop/.den/file to create a map of the densest particle per
+    pixel from a hop density output file.
+
+    Exemplary syntax: 
+    
+    - Mass files: Directly from output
+    part2map -inp $SRC/output/degraded-nproc4/output_00008 -out mass0008.map -per true -fil ascii
+    part2map -inp $SRC/output/normalsize-nproc32/output_00008 -out mass0008.map -per true -fil ascii
+    
+    - Density files: 
+    part2map -inp $SRC/output/degraded-nproc4/output_00008 -out den0008.map -per true -fil ascii -den ../../HOP/degraded/hop/hop00008.den
+    part2map -inp $SRC/output/normalsize-nproc32/output_00008 -out den0008.map -per true -fil ascii -den $EXEC/mladen-halofinders-20160403/HOP/normalsize/hop/hop00008.den
+
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+- PLOTTING SCRIPTS
+    I have written the following plotting scripts:
+
+
+    - bindingplot
+        It creates the plot of mladen_particleoutput.txt**** files as 
+        bindingplot.png
+        Usage: bindingplot /path/to/ramses/output_dir/
+
+        NOT FINISHED YET, SINCE OUTPUT IS NOT DONE YET
+        for now, it plots each particle in a clump with a different
+        color for each processor it belongs to.
+
+
+    - cell_particle_comparison
+        Creates a scatter plot of all particles and cells which are in clumps.
+
+        if flag -f was chosen:
+        Creates an image with 3 plots:
+        - first one is particles that are in a clump
+        - second is all cell positions that are in a clump
+        - third is the upper two combined
+        The script looks for mladen_clumpparticles.txt*** as well as
+        clump_map.csv***** files. (mladen_clumpparticles are created
+        with the subroutine mladen_getclumpparticles, clump_map.csv***
+        are created with the subroutine write_clump_map() in clump_merger.f90)
+
+        if flag -xyz was chosen:
+        Same as -f, but does it for all 3 coordinate planes (xy, yz, xz)
+        The -xyz option is currently the only one which actually accounts for
+        the real cell size. (But currently hangs on zbox when saving image.)
+
+
+    - cmps
+        Creates plots of the cumulative mass profiles.
+        Usage:
+        cmp -lin <dir> :  create plots for linear binnings
+        cmp -log <dir> :  create plots for logarithmic binning
+        it looks for mladen_CPM-lin.txt* or mladen_CPM-log.txt* files in <dir>.
+        !!! THOSE FILES DO NOT EXIST ANYMORE AND CANNOT BE CREATED SINCE
+        !!! THE LEVEL-BY-LEVEL UNBINDING. (communications fuck up the values
+        !!! randomly.)
+
+    - cmpplot
+        creates a plot of all cumulative mass profile files for clumps.
+        Usage: cmpplot clump-nr outputdir
+
+    - cmpplot_all
+        creates a plot of all cumulative mass profile files for clumps.
+        It does it recursively for masspt/linbins, masspt/logbins, 
+        poisson/linbins and poisson/logbins directories.
+        Usage: cmpplot_all clump-nr parentdir
+
+    - cpuplot.py
+        This script plots all particles that are in clumps. It makes 3 subplots,
+        one for each plane of coordinates: xy, yz and xz. The particle color is 
+        different for every processor.
+        It needs mladen_particleoutput.txt* files as they are in this moment 
+        (29.06.16), where the first 3 columns are the particle positions and
+        the 9th column is the processor ID.
+        ( I might rewrite it later so that the procID is read out by which file
+        is being read.)
+
+        Usage: cpuplot.py <nproc> <mladen_particleoutput.txt00*>
+        <nproc> : number of processors used in ramses run, also the number of 
+        output files
+        <mladen_particleoutput.txt00*>: all mladen_particleoutput.txt* files.
+
+    - filterparticles
+        Filters out particles of mladen_particleoutput* files according to a
+        given criterium and writes them to a file.
+        Usage: filterparticles <dir>
+
+
+    - hopposplot
+        It draws a map of the halo positions generated by hop.
+        Input file is a .pos file created by hop (script_hop.sh).
+        In addition, it estimates the halo size over the halo mass M given in
+        the .pos file by assuming that the mean halo density is 200 with
+        the formula M = 4/3 * pi * density.
+        Type hopposplot for short help.
+
+
+    - mass_comparison
+        Usage: mass_comparison output_XXXXX
+        Draws a plot of the ratio of summed up particle masses over the clump 
+        masses.
+        It looks for a "mladen_masscomparison.txt" file within the given 
+        directory. Those files are created by the subroutine 
+        'mladen_getmasscomparison()'. (Look for it 
+        in the file 
+        ~/bachelorarbeit/workbench/ramses/patches_mladen/not_used_anymore.f90 
+        if it's not present in the patches_mladen/clump_finder.f90 file.)
+
+
+    - part2mapplot
+        It draws a map of a part2map .map output file.
+        Input file is a .map file generated by part2map.
+        That can be a HOP density file or a PHEW output directory.
+
+        Type part2mapplot for short help.
+
+
+    - particle_clump_comparison
+        Usage:
+        particle_clump_comparison output_XXXXX 
+            Input is a ramses output_XXXXX directory.
+            Draws a scatterplot with all the particles on the x-y-plane and the 
+            estimated clump sizes on the x-y-plane.
+
+        particle_clump_comparison -f output_XXXXX
+            Full output:
+            Draws a figure with 3 subplots:
+            1) The clump positions on the x-y-plane along with the estimated 
+               clump size
+            2) All the particles on the x-y-plane that belong to a clump
+            3) Both of the above overlapping in one plot.
+            Input is a ramses output_XXXXX directory.
+       
+        particle_clump_comparison -xyz output_XXXXX
+            like -f, but does it for xy, yz and xz plane
+
+        The script will look for clump_00008.txt000** files as well as
+        mladen_clumpparticles.txt000** files. mladen_clumpparticles.txt000** 
+        files are created with the subroutine mladen_getclumpparticles. 
+        (Look for it in the file 
+        ~/bachelorarbeit/workbench/ramses/patches_mladen/not_used_anymore.f90 
+        if it's not present in the patches_mladen/clump_finder.f90 file.)
+
+        NOT ANY MORE
+        ---The script will create a clump_allinone.txt file and a 
+        ---particle_allinone.txt file, which contain the according output
+        ---from each processor, just in one file.
+
+
+    - phipart
+        creates a plot of all potential files for clumps.
+        It also plots the particle's kinetic enery at their
+        distance from the center of mass
+        usage: phipart clump-nr outputdir
+
+
+    - phiplot
+        creates a plot of all potential files for clumps.
+        Usage: phiplot clump-nr outputdir
+
+
+    - phiplot_all
+        creates a plot of all potential files for clumps.
+        It does it recursively for masspt/linbins, masspt/logbins, 
+        poisson/linbins and poisson/logbins directories.
+        Usage: phiplot_all clump-nr parentdir
+
+
+    - phewposplot
+        It draws a map of the halo positions generated by PHEW.
+        Input file is a ramses output_XXXXX directory.
+        In addition, it estimates the halo size over the halo mass M given in
+        the .pos file by assuming that the mean halo density is 200 with
+        the formula M = 4/3 * pi * density.
+        Type phewposplot for short help.
+        
+        
+    - plot_particles
+        This script will create a figure containing 3 plots:
+        The particles from output files mladen_particleoutput.txt*
+        but only those particles with clump ID != 0.
+        First plot is xy-plane, second yz-plane, third is xz plane.
+
+        If you want full output instead, use flag -f.
+        If you want to specify the box length, use -boxlen <boxlen>
+
+        Usage: plot_particles /path/to/output_00008/
+        or: plot_particles -f /path/to/output_00008/
+        or: plot_particles -boxlen <boxlen> /path/to/output to specify the 
+        boxlength.
+
+        It will look for mladen_particleoutput.txt* files.
+
+
+    - singleclump
+        same as particle_clump_comparison, but will create the image only for a
+        chosen clump.
+        Usage: singleglump output_0XXXX clumpID
+
+
+    - subtest.py
+        This scripts plots the particles by distance and their kinetic energy as
+        well as their calculated potential.
+        inputfile is filtered particle file created by
+        filterparticles.py
+        Usage: subtest.py inputfile.txt
+        
+    - subtest-profile.py
+        This scripts plots the particles by distance and their kinetic energy 
+        as well as their calculated cumulative mass profile.
+        inputfile is filtered particle file created by
+        filterparticles.py
+        Usage: subtest.py inputfile.txt
+
+
+
+    - testCoM
+        A script to test if the CoM and max distance of a particle in a clump
+        from the clump's CoM are correct.
+        This script creates 3 plots, for the xy, yz and xz plane,
+        containing the particles of clumps which are not halo
+        namegivers, e.g. do not merge in itself.
+
+        Usage: testCoM <dir>
+        It will look for clump_00008.txt000** files as well as
+        mladen_particleoutput.txt000** files as well as 
+        mladen_COM.txt* files.
+        mladen_particleoutput files are created with the subroutine 
+        mladen_particleoutput(), mladen_COM files are created with
+        the subroutine mladen_clumpproperties
+
+        flags:
+        -s:   Singleclump. Will create a plot for each clump separately
+              in the subdirectory CoM-output.
+
+
+    - unbindingplot
+        This script creates 3 plots, for the xy, xz and yz plane.
+        If the plot is in 3D, it creates 4 plots.
+        
+        Usage: unbindingplot <dir> to plot all particles which were 
+        unbound at least once.
+
+        Options: 
+        All options require clump_*  and mladen_particleoutput* files.
+
+          -all  <halo-ID> <subhalo-ID> <output_dir>
+            calls calls flags -filteredhalo3D, -subhalo and -i (and also plots 
+            all particles which are in clumps).
+
+          -cmp <halo-ID> <dir>
+            plot the cumulative mass profile of <halo-ID>.
+            Needs mladen_CMP* files.
+
+          -d <halo-ID> <dir>
+            plots the mass binning distances.
+            Needs mladen_dist* files.
+
+          -filteredhalo3D or -f
+            just like halo3D, but filters out children with <50 cells
+          
+          -halo <halo-ID> <dir> 
+            plots all particles that belong to the halo <halo-ID> in
+            2D for all 3 planes. Child clump particles have different
+            colour.
+          
+          -halo3D <halo-ID>  <dir>
+            3d-scatterplot of halo <halo-ID>. Child clump particles 
+            have different colour.
+
+          -haloCOM <halo-ID> <dir>
+            like -halo, but include Center of Masses 
+            (needs mladen_COM* files)
+
+          -i <halo-ID> <dir>
+            writes <halo-ID> information, like number of particles,
+            unbound particles etc.
+
+          -single <halo-ID> <dir>
+            plots only particles assigned to <halo-ID>.
+
+          -subhalo <subhalo-ID> 
+             3D plot of a subhalo <subhalo-ID>. '
+
+

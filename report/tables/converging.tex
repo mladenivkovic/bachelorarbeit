@@ -1,0 +1,20 @@
+\begin{table}[!htb]
+	\begin{centering}
+		\begin{tabular}[t]{|r | l | r | l |}
+			\hline
+			$\varepsilon$     &       $d_v$ 	& \texttt{niter}  		&	$D_v$	\\
+			\hline
+			0.5       &        0.3000  	&  		 		2    	&	0.2326  \\
+			0.1       &        0.0614  	&           	4    	&	0.0419	\\
+			0.01      &        0.0036  	&           	7    	&	0.0024	\\
+			0.001     &        0.0010  	&           	8    	&	0.0014  \\       
+			0.0001    &        0.0000  	&          		10    	&	0.0009 	\\
+			\hline
+		\end{tabular}
+	\caption{%
+			The deviation $D_v$ (eq. \ref{eq:Dv}) from the originally set bulk velocity to the computed bulk velocity for the subhalo of the \dt-dataset in dependence of the convergence limit $\varepsilon$.
+			The iterative clump properties determination halts after \texttt{niter} iterations, when the difference $d_v$ of the previously determined bulk velocity to the new bulk velocity, $d_v = \frac{v_{bulk} - v_{bulk,old}}{v_{bulk,old}} < \varepsilon$.
+	}
+	\label{tab:converging}%
+	\end{centering}
+\end{table}

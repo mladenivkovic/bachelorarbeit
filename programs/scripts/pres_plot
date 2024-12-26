@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+
+script=$SCR'/pres_plot_full_halo.py'
+halo=66858
+srcdir=$1
+noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+npart=`find "$srcdir" -maxdepth 1 -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+npart=$(($npart-$noutput))
+$script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+
+
+

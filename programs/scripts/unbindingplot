@@ -1,0 +1,376 @@
+#!/bin/bash
+
+# Documentation: See $errormessage
+
+
+errormessage='
+please specify an input directory. This script will look for
+mladen_particleoutput.txt000** files. 
+Usage: unbindingplot <dir> to plot all particles which were 
+unbound at least once.
+
+Options: 
+All options require clump_*  and mladen_particleoutput* files.
+
+  -3D <halo-ID>  <dir>
+    3d-scatterplot of halo <halo-ID>. Child clump particles 
+    have different colour.
+
+  -abc <output-dir>
+    6 2D plots: 3 -b and 3 -bc for all halos.
+
+  -all  <halo-ID> <subhalo-ID> <output_dir>
+    calls flags -filteredhalo3D, -subhalo and -i (and also plots all 
+    particles which are in clumps).
+
+  -b <halo-ID> <output_dir>
+    plots CoM and closest border without parent particles.
+    also -border
+
+  -bc <halo-ID> <output_dir>
+    plots CoM and closest border without parent particles.
+    Draws a circle from the center of mass to the closest border.
+    also -borderCircle
+
+  -b3D <halo-ID> <subhalo-ID> <output_dir>
+    plots CoM and closest border.
+    also -border3D
+
+  -cmp <halo-ID> <dir>
+    plot the cumulative mass profile of <halo-ID>.
+    Needs mladen_CMP* files.
+
+  -com <halo-ID> <dir>
+    like -halo, but include Center of Masses 
+    (needs mladen_COM* files)
+
+  -d <halo-ID> <dir>
+    plots the mass binning distances.
+    Needs mladen_dist* files.
+
+  -filteredhalo3D or -f
+    just like halo3D, but filters out children with <50 cells
+  
+  -halo <halo-ID> <dir> 
+    plots all particles that belong to the halo <halo-ID> in
+    2D for all 3 planes. Child clump particles have different
+    colour.
+  
+  -hb <halo-ID> <subhalo-ID> <output_dir>
+    plots CoM and closest border with parent particles.
+    also -haloBorder
+
+  -hb3D <halo-ID> <subhalo-ID> <output_dir>
+    plots CoM and closest border with parent particles.
+    also -haloBorder3D
+
+  -hbc <halo-ID> <subhalo-ID> <output_dir>
+    plots CoM and closest border with parent particles.
+    also -haloBorderCircle
+
+  -i <halo-ID> <dir>
+    writes <halo-ID> information, like number of particles,
+    unbound particles etc.
+
+  -single <halo-ID> <dir>
+    plots only particles assigned to <halo-ID>.
+
+  -subhalo <subhalo-ID> 
+     3D plot of a subhalo <subhalo-ID>. '
+
+
+
+# Reading command line args
+if [[ $# == 0 ]]; then 
+    echo ""
+    echo -e "$errormessage"
+    exit
+elif [[ $# == 1 ]]; then
+    srcdir=$1
+    script=$SCR'/unbindingplot.py'
+    noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+    npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+    npart=$(($npart-$noutput))
+    $script "$noutput" "$npart" "$srcdir"/mladen_particleoutput* 
+
+elif [[ $# == 2 ]]; then
+    case $1 in
+        -AllBorderCircle | -abc)
+        script=$SCR'/unbindingplot-AllHalosBorderCircle.py'
+        srcdir=$2
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* "$srcdir"/mladen_border*
+        ;;
+
+        *)
+        echo "I don't recognise your arguments."
+        echo -e "$errormessage"
+        exit
+    esac
+
+
+elif [[ $# == 3 ]]; then
+    case $1 in
+        -3D |-halo3D)
+        script=$SCR'/unbindingplot-halo3D.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -maxdepth 1 -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        echo "noutput:" $noutput "npart:", $npart
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+        ;;
+
+
+
+
+        -border | -b)
+        script=$SCR'/unbindingplot-Border.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* "$srcdir"/mladen_border*
+        ;;
+
+        -borderCircle | -bc)
+        script=$SCR'/unbindingplot-BorderCircle.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* "$srcdir"/mladen_border*
+        ;;
+
+        -border3D | -b3D)
+        script=$SCR'/unbindingplot-Border3D.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* "$srcdir"/mladen_border*
+        ;;
+
+        -cmp)
+        script=$SCR'/unbinding-cmp.py'
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        halo=$2
+        $script "$noutput" "$halo" 0 "$srcdir"/clump_* "$srcdir"/mladen_CMP*
+        ;;
+
+        -com | -haloCOM)
+        script=$SCR'/unbindingplot-haloCOM.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* 
+        ;;
+
+        -d)
+        script=$SCR'/unbinding-dist.py'
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        halo=$2
+        $script "$noutput" "$halo" 0 "$srcdir"/clump_* "$srcdir"/mladen_dist*
+
+        ;;
+
+
+        -filteredhalo3D | -f)
+        script=$SCR'/unbindingplot-filteredhalo3D.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* 
+        ;;
+
+        -halo)
+        script=$SCR'/unbindingplot-halo.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+
+        ;;
+
+
+        -haloBorder | -hb)
+        script=$SCR'/unbindingplot-haloBorder.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* "$srcdir"/mladen_border*
+        ;;
+
+        -haloBorderCircle | -hbc)
+        script=$SCR'/unbindingplot-haloBorderCircle.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* "$srcdir"/mladen_border*
+        ;;
+
+        -haloBorder3D | -hb3D)
+        script=$SCR'/unbindingplot-haloBorder3D.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* "$srcdir"/mladen_COM* "$srcdir"/mladen_border*
+        ;;
+
+        -i)
+        script=$SCR'/unbinding-info.py'
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        halo=$2
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput*
+        ;;
+
+        -single)
+        script=$SCR'/unbindingplot-singleclump.py'
+        halo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+        ;;
+        
+        -subhalo)
+        script=$SCR'/unbindingplot-subhalo.py'
+        subhalo=$2
+        srcdir=$3
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+        $script "$noutput" "$subhalo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+        ;;
+
+
+        *)
+        echo "I don't recognise your arguments."
+        echo -e "$errormessage"
+        exit
+    esac
+    srcdir=$2
+
+elif [[ $# == 4 ]]; then
+    case $1 in
+         -all)
+        halo=$2
+        subhalo=$3
+        srcdir=$4
+        noutput=`ls "$srcdir"/mladen_particleoutput* | wc -l`
+        npart=`find "$srcdir" -name 'mladen_particleoutput*' -exec wc -l {} \; | awk '{total += $1} END{print total}'`
+        npart=$(($npart-$noutput))
+
+        echo "UNBDINGINGPLOT ALL."
+        echo "1 - PLOTTING CLUMPPARTICLES"
+        echo "Skipped."
+        #script=$SCR'/plot_particles-noaxislimits.py'
+        #$script "$noutput" "$srcdir"/mladen_particleoutput* 
+
+        echo ""
+        echo "2 - PLOTTING UNBOUND PARTICLES"
+        echo "Skipped."
+        #script=$SCR'/unbindingplot.py'
+        #$script "$noutput" "$npart" "$srcdir"/mladen_particleoutput* 
+
+        echo ""
+        echo "3 - PLOTTING HALO 3D"
+        script=$SCR'/unbindingplot-filteredhalo3D.py'
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+
+        echo ""
+        echo "4 - PLOTTING SUBHALO 3D"
+        script=$SCR'/unbindingplot-subhalo.py'
+        $script "$noutput" "$subhalo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+
+        
+        echo ""
+        #echo "5 - PLOTTING CMP"
+        #script=$SCR'/unbinding-cmp.py'
+        #$script "$noutput" "$halo" 0 "$srcdir"/clump_* "$srcdir"/mladen_CMP*
+
+        echo ""
+        #echo "6 - PLOTTING DISTANCES"
+        #script=$SCR'/unbinding-dist.py'
+        #$script "$noutput" "$halo" 0 "$srcdir"/clump_* "$srcdir"/mladen_dist*
+
+
+        echo ""
+        echo "7 - WRITING INFO"
+        script=$SCR'/unbinding-info.py'
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput*
+
+       
+        echo ""
+        echo "8 - CREATING EXCLUSIVE PLOTS"
+
+        script=$SCR'/unbindingplot-singleclump.py'
+        
+        echo "8.1 - HALO AFTER"
+        $script "$noutput" "$halo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+        mv singleclump_plot"$halo"_3D.png namegiver"$halo"after.png
+
+        echo "8.2 - SUBHALO AFTER"
+        $script "$noutput" "$subhalo" "$npart" "$srcdir"/clump_* "$srcdir"/mladen_particleoutput* 
+        mv singleclump_plot"$subhalo"_3D.png subhalo"$subhalo"after.png
+
+        cd $srcdir
+        cp clump* before/
+
+        echo "8.3 - SUBHALO BEFORE"
+        $script "$noutput" "$subhalo" "$npart" before/clump_* before/mladen_particleoutput* 
+        mv singleclump_plot"$subhalo"_3D.png ../subclump"$subhalo"before.png
+
+        echo "8.4 - HALO BEFORE"
+        $script "$noutput" "$halo" "$npart" before/clump_* before/mladen_particleoutput* 
+        mv singleclump_plot"$halo"_3D.png namegiver"$halo"before.png
+
+        cd ..
+        ;;
+
+
+        *)
+        echo "I don't recognise your arguments."
+        echo -e "$errormessage"
+        exit
+
+
+
+        ;;
+    esac
+
+else
+    echo "I don't recognise your arguments."
+    echo -e "$errormessage"
+    exit
+fi
+
+
+
+
+
+

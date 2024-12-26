@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# A script to execute the hopposplot-bash.py script correctly.
+# It will create the plot of the hop .pos input file as input_filename.pdf, unless specified differently.
+
+export xlabel='xlabel'
+export ylabel='ylabel'
+export title='title'
+export outputfilename='12345' #just something random to check if outputfilename was given
+
+if [[ $# == 0 ]]; then 
+    echo ""
+    echo "please specify an input file. Requires a hop .pos  output file"
+    echo ""
+    echo "Usage:"
+    echo "-o give output filename"
+    echo "-t give title for the graph"
+    echo "-x give xlabel for the graph"
+    echo "-y give ylabel for the graph"
+    exit
+fi
+
+while [[ $# -gt 0 ]]
+do
+    arg="$1"
+
+    case $arg in 
+        -h) #help
+        echo "-o give output filename"
+        echo "-t give title for the graph"
+        echo "-x give xlabel for the graph"
+        echo "-y give ylabel for the graph"
+        exit
+        ;;
+        
+        -o) # give output filename
+        export outputfilename=$2
+        shift
+        ;;
+
+        -t) # specify title for graph
+        export title=$2
+        shift
+        ;;
+
+        -x) # specify xlabel for graph
+        export xlabel=$2
+        shift
+        ;;
+
+        -y) #specify ylabel for graph
+        export ylabel=$2
+        shift
+        ;;
+
+        *)
+        if [ -a $arg ]; then
+            export filename=$arg
+            if [[ $filename == *.pos ]] && [[ "$outputfilename" == "12345" ]]; then
+                export outputfilename=${filename%????}
+            fi
+        else
+            echo "file " $arg "not found."
+            exit
+        fi
+        ;;
+    esac
+
+    shift
+done
+
+hopposplot-pythonplot.py "$filename" "$outputfilename" "$xlabel" "$ylabel" "$title"
+
+

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# creates a plot of all cumulative mass profile files for clumps.
+# It does it recursively for masspt/linbins, masspt/logbins, poisson/linbins and poisson/logbins directories.
+# usage: cmpplot clump-nr parentdir
+
+
+
+
+errormsg="cmpplot\nUsage: cmpplot_all <clumpid> <srcdir>\nCreates a plot of the cumulative mass profiles recursively for masspt/linbins, masspt/logbins, poisson/linbins and poisson/logbins directories. Needs mladen_CMP*.txt files from output."
+# Reading command line args
+if [[ $# == 1 ]]; then
+    clump=$1
+    printf -v clumpfd "%05d" $clump
+    $SCR/cmpplot_all-plot.py  "$clump" masspnt/linbins/output_00001/mladen_cmp_"$clumpfd"* masspnt/logbins/output_00001/mladen_cmp_"$clumpfd"*   poisson/linbins/output_00001/mladen_cmp_$clumpfd* poisson/logbins/output_00001/mladen_cmp_"$clumpfd"* 
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+
+
+
+

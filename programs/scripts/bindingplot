@@ -1,0 +1,27 @@
+#!/bin/bash
+
+
+# A script to execute the bindingplot.py script correctly.
+# It will create the plot of the mladen_particleoutput.txt***** files as bindingplot.pdf.
+# This script will look for 'mladen_particleoutput.txtXXXXX' output files in a given directory.
+
+
+if [[ $# == 0 ]]; then # Reading command line args
+    echo ""
+    echo "please specify an input directory. This script will look for 'mladen_particleoutput.txt*' output files."
+    echo ""
+    exit
+elif [[ $# == 1 ]]; then
+    srcdir=$1
+else
+    echo ""
+    echo "Too many args. Can't handle that. Exiting."
+    exit
+fi
+
+
+workdir=$PWD
+
+noutput=`ls "$srcdir"/mladen_particleoutput.txt* | wc -l`
+
+bindingplot.py "$noutput" "$srcdir"/mladen_particleoutput.txt*

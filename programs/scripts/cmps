@@ -1,0 +1,65 @@
+#!/bin/bash
+
+
+# This script plots the cumulative mass profiles. 
+# Usage:
+# cmp -lin <dir> :  create plots for linear binnings
+# cmp -log <dir> :  create plots for logarithmic binning
+# it looks for mladen_CPM-lin.txt* or mladen_CPM-log.txt* files in <dir>.
+
+# Reading command line args
+if [[ $# != 2  ]]; then 
+    echo ""
+    echo "please specify a flag and an input directory. This script will look for mladen_CPM-lin.txt* or mladen_CPM-log.txt* files in <dir>."
+    echo "flags: -lin for linear bins, -log for log bins."
+    echo ""
+    exit
+else 
+    
+    # get source directory
+    if [[ -d "$2" ]]; then
+        srcdir=$2
+    else
+        echo "Directory " $2 " not found."
+        exit
+    fi
+
+    # prepare for linear or log
+    case $1 in
+        -lin)
+        script=$SCR'/cmp-lin.py'
+        inputfile='mladen_CMP-lin-allinone.txt'
+        
+        echo "Writing CMP allinone file"
+            head -n 1 "$srcdir"/mladen_CMP-lin.txt00001 > "$inputfile"
+            for i in "$srcdir"/mladen_CMP-lin.txt0*; do
+                lines=`cat $i | wc -l`
+                tail -n $(($lines-1)) $i >> "$inputfile"
+            done
+        ;;
+#
+        -log)
+        script=$SCR'/cmp-log.py'
+        inputfile='mladen_CMP-log-allinone.txt'
+
+        echo "Writing CMP allinone file"
+            head -n 1 "$srcdir"/mladen_CMP-log.txt00001 > "$inputfile"
+            for i in "$srcdir"/mladen_CMP-log.txt0*; do
+                lines=`cat $i | wc -l`
+                tail -n $(($lines-1)) $i >> "$inputfile"
+            done
+        ;;
+#        
+        *)
+        echo "I don't recognise your arguments. Use -lin <dir> for linear bins or -log <dir> for log bins."
+        exit
+    esac
+fi
+
+
+
+    
+$script  "$inputfile"
+
+
+

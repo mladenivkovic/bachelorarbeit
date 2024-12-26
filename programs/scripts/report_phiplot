@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# usage: report_phiplot clump-nr 
+# run from parent dir, where both simulation results are in. (old version, commented out line.)
+# run from results directory, where the dirs "log" and "lin" are stored
+
+
+
+
+errormsg="phiplot\nUsage: report_phiplot <which> \nCreates a plot of the potentials for subhalo 4220.\n Run from /home/mivkov/UZH/Bachelorarbeit/bachelorarbeit/files/results/dice-two/binning \n\n which = -lin \n\t create plot with linear axes \nwhich = -log\n\t create plot with logarithmic y axis"
+
+# Reading command line args
+
+clump=4220    
+printf -v clumpfd "%05d" "$clump"   # get clump ID in 5 digits
+
+if [[ $# == 1 ]]; 
+then
+
+    case $1 in
+        -lin)
+        script='report_phiplot-plot-lin.py'
+        ;;
+
+        -log)
+        script='report_phiplot-plot-log.py'
+        ;;
+        
+        *)
+        echo -e $errormsg
+        exit
+        ;;
+    esac
+
+
+else
+    echo -e $errormsg
+    exit
+fi
+
+
+nlin=`ls -l lin/mladen_phi_* | wc -l`
+nlog=`ls -l log/mladen_phi_* | wc -l`
+
+$SCR/$script  "$clump" $nlin $nlog lin/mladen_phi_"$clumpfd"* log/mladen_phi_"$clumpfd"*
+
+
+
+

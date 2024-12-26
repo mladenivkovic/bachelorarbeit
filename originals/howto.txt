@@ -1,0 +1,9 @@
+Clone dice, ramses repositorys here.
+
+
+Update repos with:
+    git pull
+
+Ramses: update files with:
+    cp -r -u ramses ../
+

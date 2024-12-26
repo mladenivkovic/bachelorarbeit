@@ -1,0 +1,152 @@
+\documentclass[11pt]{beamer}
+
+
+
+
+
+\usepackage{lmodern} 		% Diese beiden packages sorgen für echte 
+\usepackage[T1]{fontenc}	% Umlaute.
+
+\usepackage{amssymb, amsmath, color, graphicx, float, setspace, tipa}
+\usepackage[utf8]{inputenc} 
+\usepackage[english]{babel}
+\usepackage[justification=centering]{caption}
+\addto\captionsenglish{\renewcommand{\figurename}{}} %Abbildungen nicht bzw. anders beschriften.
+
+
+%\usepackage[pdfpagelabels,pdfstartview = FitH,bookmarksopen = true,bookmarksnumbered = true,linkcolor = black,plainpages = false,hypertexnames = false,citecolor = black, breaklinks]{hyperref}
+%\usepackage{url}
+\usepackage{longtable} 		%Seitenübergreifende Tabelle. Vorlage siehe unten
+\newtheorem*{bem}{Bemerkung} % Neue Theorem-Umgebung: Bemerkung
+\newcommand{\fillframe}{\vskip0pt plus 1filll} 
+
+
+
+%-----------------
+%BEAMER-SPEZIFISCH
+%-----------------
+
+\usetheme{default}
+% Verschiedene Varianten von usetheme, usecolortheme und usefonttheme kann man hier ausprobieren: http://deic.uab.es/~iblanes/beamer_gallery/
+
+% \usetheme{
+% 	AnnArbor | Antibes | Bergen |
+% 	Berkeley | Berlin | Boadilla |
+% 	boxes | CambridgeUS | Copenhagen |
+% 	Darmstadt | default | Dresden |
+% 	Frankfurt | Goettingen |Hannover |
+% 	Ilmenau | JuanLesPins | Luebeck |
+% 	Madrid | Malmoe | Marburg |
+% 	Montpellier | PaloAlto | Pittsburgh |
+% 	Rochester | Singapore | Szeged |
+% 	Warsaw
+% }
+%Interessant scheinen: Boadilla, boxes, CambridgeUS, default, (Goettingen), Hannover, Madrid, Montpellier, Pittsburgh, Rochester, Singapore, Szeged, 
+
+\usecolortheme{dove}
+% \usecolortheme{
+% 	albatross | beaver | beetle |
+% 	crane | default | dolphin |
+% 	dove | fly | lily | orchid |
+% 	rose |seagull | seahorse |
+% 	sidebartab | structure |
+% 	whale | wolverine
+% }
+
+\usefonttheme{structurebold}
+% 	default | professionalfonts | serif |
+% 	structurebold | structureitalicserif |
+% 	structuresmallcapsserif
+% }
+
+
+%\useinnertheme{
+% 	circles | default | inmargin |
+% 	rectangles | rounded
+% } Am besten sein lassen.
+
+
+% \useoutertheme{
+% 	default | infolines | miniframes |
+% 	shadow | sidebar | smoothbars |
+% 	smoothtree | split | tree
+% } Am besten sein lassen.
+
+
+
+\setbeamercovered{transparent} %Halbtransparente Overlays (was als nächstes Element auf der Folie gezeigt wird)
+\beamertemplatenavigationsymbolsempty % Entfernt Navigationssymbole unten
+%\setbeamertemplate{footline}[frame]  % Seitenzahlen
+    \setbeamertemplate{footline}{%
+    	\raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[10pt]{\hyperlink{tableofcontents}{\scriptsize\insertframenumber}}}}}
+
+
+
+%---------------------
+%--Metainformationen--
+%---------------------
+\title{Halo and Sub-Halo Finding in Cosmological N-body Simulations}
+
+\author[M. Ivkovic]{
+	Mladen Ivkovic
+}
+\institute[ICS -- UZH]{Institute for Computational Science\\ University of Zurich}
+
+\date[08.12.2017]{08. June 2017}
+
+
+% \title[Kurzform]{Vortrag zur Berechenbarkeit}
+%     Titel des Vortrages
+% \subtitle[Kurzform]{Untertitel}
+%     Untertitel
+% \author[M. Schulz]{Michael Schulz}
+%     Autor festlegen
+% \institute[IfI -- HU Berlin]{Institut für Informatik\\ Humboldt-Universität zu Berlin}
+%     Angabe des Institutes
+% \date[26.05.06]{26. Mai 2006}
+%     Datum der Präsentation, alternativ kann mittels \date{\today} auch das aktuelle Datum eingetragen werden.
+% \logo{\pgfimage[width=2cm,height=2cm]{hulogo}}
+%     Die Datei hulogo.pdf (bzw. hulogo.png, hulogo.jpg, hulogo.mps bei Verwendung von pdftex als Backend) als Logo auf allen Folien, hier mithilfe des Paketes pgf.
+% \titlegraphic{\includegraphics[width=2cm,height=2cm]{hulogo}}
+%     Die Datei hulogo.pdf (bzw. analog wie bei \logo auch entsprechendes Format) als Logo nur auf der Titelseite unter Verwendung des Paketes graphicx.
+
+
+
+
+%-------------------------------
+% Neue Befehle
+%-------------------------------
+
+\newcommand{\del}{\partial}
+%differential d
+\newcommand{\de}{\mathrm{d}}
+
+%\newcommand{\ramses}{\textsc{ramses}}
+%\newcommand{\phew}{\textsc{phew}}
+%\newcommand{\dice}{\textsc{dice}}
+\newcommand{\ramses}{\texttt{RAMSES}}
+\newcommand{\phew}{\texttt{PHEW}}
+\newcommand{\dice}{\texttt{DICE}}
+
+\newcommand{\dt}{\texttt{dice-twobody}}
+\newcommand{\ds}{\texttt{dice-levels}}
+\newcommand{\cosmo}{\texttt{cosmo}}
+\newcommand{\simple}{simple unbinding}
+\newcommand{\neigh}{accounting for neighbours}
+\newcommand{\iter}{iterative properties determination}
+\newcommand{\phewon}{PHEW only}
+
+
+
+
+
+%===================
+% BIBLIOGRAPHY
+%===================
+\usepackage[backend=bibtex,sorting=nyt,bibencoding=ascii,citestyle=authoryear]{biblatex}
+\addbibresource{references.bib}
+\usepackage{csquotes} %recommended when using babel and biblatex
+%Abbreviations for Bibliography: http://adsabs.harvard.edu/abs_doc/aas_macros.html
+\newcommand{\aap}{Astronomy and Astrophysics}
+\newcommand{\mnras}{Monthly Notices of the RAS}
+\newcommand{\apj}{The Astrophysical Journal}

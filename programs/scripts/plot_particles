@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# This script will create a figure containing 3 plots:
+# The particles from output files mladen_particleoutput.txt*
+# but only those particles with clump ID != 0.
+# First plot is xy-plane, second yz-plane, third is xz plane.
+
+# If you want full output instead, use flag -f.
+# If you want to specify the box length, use -boxlen <boxlen>
+
+
+# Usage: plot_particles /path/to/output_00008/
+# or: plot_particles -f /path/to/output_00008/
+# or: plot_particles -boxlen <boxlen> /path/to/output to specify the boxlength.
+
+# It will look for mladen_particleoutput.txt* files.
+
+# Reading command line args
+if [[ $# == 0 ]]; then 
+    echo ""
+    echo "please specify an input directory. This script will look for mladen_particleoutput.txt* files"
+    echo "plot_particles -f : create full output (all particles, not just clumpparticles)."
+    echo "plot_particles -boxlen <boxlen> <dir> : specify the box length."
+    echo ""
+    exit
+elif [[ $# == 1 ]]; then
+    srcdir=$1
+    script=$SCR'/plot_particles.py'
+    noutput=`ls $srcdir/mladen_particleoutput* | wc -l`
+    $script "$noutput" "$srcdir"/mladen_particleoutput* 
+
+elif [[ $# == 2 ]]; then
+    case $1 in
+        -f)
+        script=$SCR'/plot_particles-full.py'
+        ;;
+
+#        -xyz)
+        #script=$SCR'/particle_clump_comparison-plot-xyz.py'
+        #;;
+ #       
+        *)
+        echo "I don't recognise your arguments. Use -f <dir> for full output (all particles) or <dir> for clump particle output only or -boxlen <boxlen> <dir> to specify the box length."
+        exit
+    esac
+    srcdir=$2
+    noutput=`ls $srcdir/mladen_particleoutput* | wc -l`
+    $script "$noutput" "$srcdir"/mladen_particleoutput* 
+
+elif [[ $# == 3 ]]; then
+    case $1 in
+        -boxlen)
+        script=$SCR'/plot_particles-boxlen.py'
+        ;;
+
+#        -xyz)
+        #script=$SCR'/particle_clump_comparison-plot-xyz.py'
+        #;;
+ #       
+        *)
+        echo "I don't recognise your arguments. Use -f <dir> for full output (all particles) or <dir> for clump particle output only or -boxlen <boxlen> <dir> to specify the box length."
+        exit
+    esac
+    boxlen=$2
+    srcdir=$3
+
+    noutput=`ls $srcdir/mladen_particleoutput* | wc -l`
+    $script "$noutput" "$srcdir"/mladen_particleoutput* "$boxlen"
+
+else
+    echo "I don't recognise your arguments. Use -f <dir> for full output (all particles) or <dir> for clump particle output only or -boxlen <boxlen> <dir> to specify the box length."
+    exit
+fi
+
+
+
+
+
+

@@ -1,0 +1,19 @@
+RAMSES VARIABLES
+
+A document about what variable stands for what in ramses.
+
+
+LEVELMIN
+    the lowest level of the grid.
+
+MYID
+    the task/processor ID.
+    WATCH OUT: myid doesn't correspond to the processor address 
+    (if you want to adress it via MPI). Instead, use myid - 1
+
+NLEVELMAX
+    the highest level of the grid.
+
+NTEST
+    number of test cells
+

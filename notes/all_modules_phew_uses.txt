@@ -1,0 +1,899 @@
+ Contains:
+    - amr_commons.f90
+    - amr_parameters.f90
+    - clfind_commons.f90
+    - sparse_mat.f90
+    - hydro_commons.f90
+    - hydro_parameters.f90
+    - poisson_commons.f90
+    - poisson_parameters.f90
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+module amr_commons
+  use amr_parameters
+
+  logical::output_done=.false.                  ! Output just performed
+  logical::init=.false.                         ! Set up or run
+  logical::balance=.false.                      ! Load balance or run
+  logical::shrink=.false.                       ! Shrink mesh or run
+  integer::nstep=0                              ! Time step
+  integer::nstep_coarse=0                       ! Coarse step
+  integer::nstep_coarse_old=0                   ! Old coarse step
+  integer::nflag,ncreate,nkill                  ! Refinements
+  integer::ncoarse                              ! nx.ny.nz
+  integer::ngrid_current                        ! Actual number of octs
+
+  real(dp)::emag_tot=0.0D0                      ! Total magnetic energy
+  real(dp)::ekin_tot=0.0D0                      ! Total kinetic energy
+  real(dp)::eint_tot=0.0D0                      ! Total internal energy
+  real(dp)::epot_tot=0.0D0                      ! Total potential energy
+  real(dp)::epot_tot_old=0.0D0                  ! Old potential energy
+  real(dp)::epot_tot_int=0.0D0                  ! Time integrated potential
+  real(dp)::const=0.0D0                         ! Energy conservation
+  real(dp)::aexp_old=1.0D0                      ! Old expansion factor
+  real(dp)::rho_tot=0.0D0                       ! Mean density in the box
+  real(dp)::t=0.0D0                             ! Time variable
+
+  ! executable identification
+  CHARACTER(LEN=80)::builddate,patchdir
+  CHARACTER(LEN=80)::gitrepo,gitbranch,githash
+
+  ! Save namelist filename
+  CHARACTER(LEN=80)::namelist_file
+
+  ! MPI variables
+  integer::ncpu,ndomain,myid,overload=1
+
+  ! Friedman model variables
+  integer::n_frw
+  real(dp),allocatable,dimension(:)::aexp_frw,hexp_frw,tau_frw,t_frw
+
+  ! Initial conditions parameters from grafic
+  integer                  ::nlevelmax_part
+  real(dp)                 ::aexp_ini=10.
+  real(dp),dimension(1:MAXLEVEL)::dfact=1.0d0,astart
+  real(dp),dimension(1:MAXLEVEL)::vfact
+  real(dp),dimension(1:MAXLEVEL)::xoff1,xoff2,xoff3,dxini
+  integer ,dimension(1:MAXLEVEL)::n1,n2,n3
+
+  ! Level related arrays
+  real(dp),dimension(1:MAXLEVEL)::dtold,dtnew ! Time step at each level
+  real(dp),dimension(1:MAXLEVEL)::rho_max     ! Maximum density at each level
+  integer ,dimension(1:MAXLEVEL)::nsubcycle=2 ! Subcycling at each level
+
+  ! Pointers for each level linked list
+  integer,allocatable,dimension(:,:)::headl
+  integer,allocatable,dimension(:,:)::taill
+  integer,allocatable,dimension(:,:)::numbl
+  integer(i8b),allocatable,dimension(:,:)::numbtot
+
+  ! Pointers for each level boundary linked list
+  integer,allocatable,dimension(:,:)::headb
+  integer,allocatable,dimension(:,:)::tailb
+  integer,allocatable,dimension(:,:)::numbb
+
+  ! Pointers for free memory grid linked list
+  integer::headf,tailf,numbf,used_mem,used_mem_tot
+
+  ! Tree arrays
+  real(dp),allocatable,dimension(:,:)::xg      ! grids position
+  integer ,allocatable,dimension(:,:)::nbor    ! neighboring father cells
+  integer ,allocatable,dimension(:)  ::father  ! father cell
+  integer ,allocatable,dimension(:)  ::next    ! next grid in list
+  integer ,allocatable,dimension(:)  ::prev    ! previous grid in list
+  integer ,allocatable,dimension(:)  ::son     ! sons grids
+  integer ,allocatable,dimension(:)  ::flag1   ! flag for refine
+  integer ,allocatable,dimension(:)  ::flag2   ! flag for expansion
+
+  ! Global indexing
+  integer ,allocatable,dimension(:)  ::cpu_map  ! domain decomposition
+  integer ,allocatable,dimension(:)  ::cpu_map2 ! new domain decomposition
+
+  ! Hilbert key
+  real(qdp),allocatable,dimension(:)::hilbert_key
+  real(qdp),allocatable,dimension(:)::bound_key,bound_key2
+  real(qdp)                         ::order_all_min,order_all_max
+
+  ! Recursive bisection                                                                               
+  real(dp),allocatable,dimension(:)    ::bisec_wall         ! bisection wall positions                
+  integer ,allocatable,dimension(:,:)  ::bisec_next         ! next 2 child cells in bisection         
+  integer::bisec_root                                       ! root of bisection tree                  
+
+  integer,allocatable,dimension(:)     ::bisec_indx         ! map from leaf cell id to cpu id         
+  real(dp),allocatable,dimension(:,:)  ::bisec_cpubox_min   ! cpu domains boxes                       
+  real(dp),allocatable,dimension(:,:)  ::bisec_cpubox_max
+  real(dp),allocatable,dimension(:,:)  ::bisec_cpubox_min2  ! cpu domains boxes for new decomp        
+  real(dp),allocatable,dimension(:,:)  ::bisec_cpubox_max2
+
+  integer,allocatable,dimension(:)     ::bisec_cpu_load     ! CPU loads (for stats)                   
+  integer,allocatable,dimension(:,:)   ::bisec_hist         ! histograms for load computation         
+  integer,allocatable,dimension(:)     ::bisec_hist_bounds  ! histogram splitting boundaries          
+  integer,allocatable,dimension(:)     ::new_hist_bounds
+  integer,allocatable,dimension(:)     ::bisec_ind_cell     ! histo swap id -> cell id map (big)      
+  integer,allocatable,dimension(:)     ::cell_level         ! store the level of the cells (big)      
+
+  real(dp)::bisec_res                                       ! resolution parameters                   
+  integer ::bisec_nres
+
+  ! Communication structure
+  type communicator
+     integer                            ::ngrid
+     integer                            ::npart
+     integer     ,dimension(:)  ,pointer::igrid
+     integer     ,dimension(:,:),pointer::f
+     real(kind=8),dimension(:,:),pointer::u
+     integer(i8b),dimension(:,:),pointer::fp
+     real(kind=8),dimension(:,:),pointer::up
+#ifdef ATON
+     real(kind=8),dimension(:,:),pointer::u_radiation
+#endif
+  end type communicator
+
+  ! Active grid, emission and reception communicators
+  type(communicator),allocatable,dimension(:)  ::active
+  type(communicator),allocatable,dimension(:,:)::boundary
+  type(communicator),allocatable,dimension(:,:)::emission
+  type(communicator),allocatable,dimension(:,:)::reception
+
+  ! Types for physical boundary conditions
+  CHARACTER(LEN=20)::type_hydro  ='hydro'
+  CHARACTER(LEN=20)::type_accel  ='accel'
+  CHARACTER(LEN=20)::type_flag   ='flag'
+
+  ! Units specified by the user in the UNITS_PARAMS namelist for non-cosmo runs.
+  ! These values shouldn't be used directly. Instead call units() in amr/units.f90.
+  real(dp)::units_density=1.0  ! [g/cm^3]
+  real(dp)::units_time=1.0     ! [seconds]
+  real(dp)::units_length=1.0   ! [cm]
+
+end module amr_commons
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+module amr_parameters
+
+  ! Define real types
+  integer,parameter::sp=kind(1.0E0)
+#ifndef NPRE
+  integer,parameter::dp=kind(1.0E0) ! default
+#else
+#if NPRE==4
+  integer,parameter::dp=kind(1.0E0) ! real*4
+#else
+  integer,parameter::dp=kind(1.0D0) ! real*8
+#endif
+#endif
+#ifdef QUADHILBERT
+  integer,parameter::qdp=kind(1.0_16) ! real*16
+#else
+  integer,parameter::qdp=kind(1.0_8) ! real*8
+#endif
+  integer,parameter::MAXOUT=1000
+  integer,parameter::MAXLEVEL=100
+  
+  ! Define integer types (for particle IDs mostly)
+  integer,parameter::i4b=4
+#ifndef LONGINT
+  integer,parameter::i8b=4  ! default long int are short int
+#else
+  integer,parameter::i8b=8  ! long int are long int
+#endif
+
+  ! Number of dimensions
+#ifndef NDIM
+  integer,parameter::ndim=1
+#else
+  integer,parameter::ndim=NDIM
+#endif
+  integer,parameter::twotondim=2**ndim
+  integer,parameter::threetondim=3**ndim
+  integer,parameter::twondim=2*ndim
+
+  ! Vectorization parameter
+#ifndef NVECTOR
+  integer,parameter::nvector=500  ! Size of vector sweeps
+#else
+  integer,parameter::nvector=NVECTOR
+#endif
+
+  integer, parameter :: nstride = 65536
+
+  ! Run control
+  logical::verbose =.false.   ! Write everything
+  logical::hydro   =.false.   ! Hydro activated
+  logical::pic     =.false.   ! Particle In Cell activated
+  logical::poisson =.false.   ! Poisson solver activated
+  logical::cosmo   =.false.   ! Cosmology activated
+  logical::star    =.false.   ! Star formation activated
+  logical::sink    =.false.   ! Sink particles activated
+  logical::rt      =.false.   ! Radiative transfer activated
+  logical::debug   =.false.   ! Debug mode activated
+  logical::static  =.false.   ! Static mode activated
+  logical::tracer  =.false.   ! Tracer particles activated
+  logical::lightcone=.false.  ! Enable lightcone generation
+  logical::clumpfind=.false.  ! Enable clump finder
+  logical::aton=.false.       ! Enable ATON coarse grid radiation transfer
+
+  ! Mesh parameters
+  integer::geom=1             ! 1: cartesian, 2: cylindrical, 3: spherical
+  integer::nx=1,ny=1,nz=1     ! Number of coarse cells in each dimension
+  integer::levelmin=1         ! Full refinement up to levelmin
+  integer::nlevelmax=1        ! Maximum number of level
+  integer::ngridmax=0         ! Maximum number of grids
+  integer,dimension(1:MAXLEVEL)::nexpand=1 ! Number of mesh expansion
+  integer::nexpand_bound=1    ! Number of mesh expansion for virtual boundaries
+  real(dp)::boxlen=1.0D0      ! Box length along x direction
+  character(len=128)::ordering='hilbert'
+  logical::cost_weighting=.true. ! Activate load balancing according to cpu time
+  ! Recursive bisection tree parameters
+  integer::nbilevelmax=1      ! Max steps of bisection partitioning
+  integer::nbinodes=3         ! Max number of internal nodes
+  integer::nbileafnodes=2     ! Max number of leaf (terminal) nodes
+  real(dp)::bisec_tol=0.05d0  ! Tolerance for bisection load balancing
+
+  ! Step parameters
+  integer::nrestart=0         ! New run or backup file number
+  integer::nstepmax=1000000   ! Maximum number of time steps
+  integer::ncontrol=1         ! Write control variables
+  integer::fbackup=1000000    ! Backup data to disk
+  integer::nremap=0           ! Load balancing frequency (0: never)
+
+  ! Output parameters
+  integer::iout=1             ! Increment for output times
+  integer::ifout=1            ! Increment for output files
+  integer::iback=1            ! Increment for backup files
+  integer::noutput=1          ! Total number of outputs
+  integer::foutput=1000000    ! Frequency of outputs
+  integer::output_mode=0      ! Output mode (for hires runs)
+  logical::gadget_output=.false. ! Output in gadget format
+  logical::output_now=.false. ! write output next step
+
+  ! Lightcone parameters
+  real(dp)::thetay_cone=12.5
+  real(dp)::thetaz_cone=12.5
+  real(dp)::zmax_cone=2.0
+
+  ! Cosmology and physical parameters
+  real(dp)::boxlen_ini        ! Box size in h-1 Mpc
+  real(dp)::omega_b=0.0D0     ! Omega Baryon
+  real(dp)::omega_m=1.0D0     ! Omega Matter
+  real(dp)::omega_l=0.0D0     ! Omega Lambda
+  real(dp)::omega_k=0.0D0     ! Omega Curvature
+  real(dp)::h0     =1.0D0     ! Hubble constant in km/s/Mpc
+  real(dp)::aexp   =1.0D0     ! Current expansion factor
+  real(dp)::hexp   =0.0D0     ! Current Hubble parameter
+  real(dp)::texp   =0.0D0     ! Current proper time
+  real(dp)::n_sink = -1.d0    ! Sink particle density threshold in H/cc
+  real(dp)::rho_sink = -1.D0  ! Sink particle density threshold in g/cc
+  real(dp)::d_sink = -1.D0    ! Sink particle density threshold in user units
+  real(dp)::m_star =-1.0      ! Star particle mass in units of mass_sph
+  real(dp)::n_star =0.1D0     ! Star formation density threshold in H/cc
+  real(dp)::t_star =0.0D0     ! Star formation time scale in Gyr
+  real(dp)::eps_star=0.0D0    ! Star formation efficiency (0.02 at n_star=0.1 gives t_star=8 Gyr)
+  real(dp)::T2_star=0.0D0     ! Typical ISM polytropic temperature
+  real(dp)::g_star =1.6D0     ! Typical ISM polytropic index
+  real(dp)::jeans_ncells=-1   ! Jeans polytropic EOS
+  real(dp)::del_star=2.D2     ! Minimum overdensity to define ISM
+  real(dp)::eta_sn =0.0D0     ! Supernova mass fraction
+  real(dp)::yield  =0.0D0     ! Supernova yield
+  real(dp)::f_ek   =1.0D0     ! Supernovae kinetic energy fraction (only between 0 and 1)
+  real(dp)::rbubble=0.0D0     ! Supernovae superbubble radius in pc
+  real(dp)::f_w    =0.0D0     ! Supernovae mass loading factor
+  integer ::ndebris=1         ! Supernovae debris particle number
+  real(dp)::mass_gmc=-1.0     ! Stochastic exploding GMC mass
+  real(dp)::z_ave  =0.0D0     ! Average metal abundance
+  real(dp)::B_ave  =0.0D0     ! Average magnetic field
+  real(dp)::z_reion=8.5D0     ! Reionization redshift
+  real(dp)::T2_start          ! Starting gas temperature
+  real(dp)::t_delay=1.0D1     ! Feedback time delay in Myr
+  real(dp)::t_diss =20.0D0    ! Dissipation timescale for feedback
+  real(dp)::t_sne =10.0D0     ! Supernova blast time
+  real(dp)::J21    =0.0D0     ! UV flux at threshold in 10^21 units
+  real(dp)::a_spec =1.0D0     ! Slope of the UV spectrum
+  real(dp)::beta_fix=0.0D0    ! Pressure fix parameter
+  real(dp)::kappa_IR=0d0      ! IR dust opacity
+  real(dp)::ind_rsink=4.0d0   ! Number of cells defining the radius of the sphere where AGN feedback is active
+  real(dp)::ir_eff=0.75       ! efficiency of the IR feedback (only when ir_feedback=.true.)
+
+
+  logical ::self_shielding=.false.
+  logical ::pressure_fix=.false.
+  logical ::nordlund_fix=.true.
+  logical ::cooling=.false.
+  logical ::neq_chem=.false.  ! Non-equilbrium chemistry activated
+  logical ::isothermal=.false.
+  logical ::metal=.false.
+  logical ::haardt_madau=.false.
+  logical ::delayed_cooling=.false.
+  logical ::smbh=.false.
+  logical ::agn=.false.
+  logical ::use_proper_time=.false.
+  logical ::ir_feedback=.false. ! Activate ir feedback from accreting sinks
+
+
+  ! Output times
+  real(dp),dimension(1:MAXOUT)::aout=1.1       ! Output expansion factors
+  real(dp),dimension(1:MAXOUT)::tout=0.0       ! Output times
+
+  ! Movie
+  integer::imovout=0             ! Increment for output times
+  integer::imov=1                ! Initialize
+  real(kind=8)::tendmov=0.,aendmov=0.
+  real(kind=8),allocatable,dimension(:)::amovout,tmovout
+  logical::movie=.false.
+  integer::nw_frame=512 ! prev: nx_frame, width of frame in pixels
+  integer::nh_frame=512 ! prev: ny_frame, height of frame in pixels
+  integer::levelmax_frame=0
+  integer::ivar_frame=1
+  real(kind=8),dimension(1:20)::xcentre_frame=0d0
+  real(kind=8),dimension(1:20)::ycentre_frame=0d0
+  real(kind=8),dimension(1:20)::zcentre_frame=0d0
+  real(kind=8),dimension(1:10)::deltax_frame=0d0
+  real(kind=8),dimension(1:10)::deltay_frame=0d0
+  real(kind=8),dimension(1:10)::deltaz_frame=0d0
+  character(LEN=5)::proj_axis='z' ! x->x, y->y, projection along z
+#ifdef SOLVERmhd
+  integer,dimension(0:NVAR+6)::movie_vars=0
+  character(len=5),dimension(0:NVAR+6)::movie_vars_txt=''
+#else
+  integer,dimension(0:NVAR+2)::movie_vars=0
+  character(len=5),dimension(0:NVAR+2)::movie_vars_txt=''
+#endif
+
+  ! Refinement parameters for each level
+  real(dp),dimension(1:MAXLEVEL)::m_refine =-1.0 ! Lagrangian threshold
+  real(dp),dimension(1:MAXLEVEL)::r_refine =-1.0 ! Radius of refinement region
+  real(dp),dimension(1:MAXLEVEL)::x_refine = 0.0 ! Center of refinement region
+  real(dp),dimension(1:MAXLEVEL)::y_refine = 0.0 ! Center of refinement region
+  real(dp),dimension(1:MAXLEVEL)::z_refine = 0.0 ! Center of refinement region
+  real(dp),dimension(1:MAXLEVEL)::exp_refine = 2.0 ! Exponent for distance
+  real(dp),dimension(1:MAXLEVEL)::a_refine = 1.0 ! Ellipticity (Y/X)
+  real(dp),dimension(1:MAXLEVEL)::b_refine = 1.0 ! Ellipticity (Z/X)
+  real(dp)::var_cut_refine=-1.0 ! Threshold for variable-based refinement
+  real(dp)::mass_cut_refine=-1.0 ! Mass threshold for particle-based refinement
+  integer::ivar_refine=-1 ! Variable index for refinement
+  logical::sink_refine=.false. ! Fully refine on sink particles
+
+  ! Initial condition files for each level
+  logical::multiple=.false.
+  character(LEN=80),dimension(1:MAXLEVEL)::initfile=' '
+  character(LEN=20)::filetype='ascii'
+
+  ! Initial condition regions parameters
+  integer,parameter::MAXREGION=100
+  integer                           ::nregion=0
+  character(LEN=10),dimension(1:MAXREGION)::region_type='square'
+  real(dp),dimension(1:MAXREGION)   ::x_center=0.
+  real(dp),dimension(1:MAXREGION)   ::y_center=0.
+  real(dp),dimension(1:MAXREGION)   ::z_center=0.
+  real(dp),dimension(1:MAXREGION)   ::length_x=1.E10
+  real(dp),dimension(1:MAXREGION)   ::length_y=1.E10
+  real(dp),dimension(1:MAXREGION)   ::length_z=1.E10
+  real(dp),dimension(1:MAXREGION)   ::exp_region=2.0
+
+  ! Boundary conditions parameters
+  integer,parameter::MAXBOUND=100
+  logical                           ::simple_boundary=.false.
+  integer                           ::nboundary=0
+  integer                           ::icoarse_min=0
+  integer                           ::icoarse_max=0
+  integer                           ::jcoarse_min=0
+  integer                           ::jcoarse_max=0
+  integer                           ::kcoarse_min=0
+  integer                           ::kcoarse_max=0
+  integer ,dimension(1:MAXBOUND)    ::boundary_type=0
+  integer ,dimension(1:MAXBOUND)    ::ibound_min=0
+  integer ,dimension(1:MAXBOUND)    ::ibound_max=0
+  integer ,dimension(1:MAXBOUND)    ::jbound_min=0
+  integer ,dimension(1:MAXBOUND)    ::jbound_max=0
+  integer ,dimension(1:MAXBOUND)    ::kbound_min=0
+  integer ,dimension(1:MAXBOUND)    ::kbound_max=0
+  logical                           ::no_inflow=.false.
+
+  !Number of processes sharing one token
+  !Only one process can write at a time in an I/O group
+  integer::IOGROUPSIZE=0           ! Main snapshot
+  integer::IOGROUPSIZECONE=0       ! Lightcone
+  integer::IOGROUPSIZEREP=0        ! Subfolder size
+  logical::withoutmkdir=.false.    !If true mkdir should be done before the run
+  logical::print_when_io=.false.   !If true print when IO
+  logical::synchro_when_io=.false. !If true synchronize when IO
+
+
+
+end module amr_parameters
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+module clfind_commons
+  use amr_commons, ONLY: qdp,dp
+  use sparse_matrix
+
+  integer::ntest,itest                                    !number of cells above threshold per CPU
+  integer::ivar_clump=1
+  integer::npeaks,npeaks_tot,npeaks_max
+  integer,allocatable,dimension(:)::npeaks_per_cpu
+  integer,allocatable,dimension(:)::ipeak_start
+  real(dp)::tot_mass
+  real(dp)::relevance_threshold=2.0
+  real(dp)::density_threshold=-1.0d0
+  real(dp)::saddle_threshold=-1.d0
+  real(dp)::rho_clfind=-1.d0
+  real(dp)::n_clfind=-1.d0
+  real(dp)::mass_threshold=0.d0
+  logical::merge_unbound=.false.
+  logical::clinfo=.false.
+
+  ! Peak communicator arrays
+  integer,allocatable,dimension(:)::peak_send_cnt,peak_send_oft
+  integer,allocatable,dimension(:)::peak_recv_cnt,peak_recv_oft
+  integer::peak_recv_tot,peak_send_tot
+  integer,allocatable,dimension(:)::peak_send_buf,peak_recv_buf
+
+  ! Spare matrix for saddle points densities
+  type(sparse_mat)::sparse_saddle_dens
+
+  ! Hash table variables
+  integer::nhash,hfree,hcollision
+  integer,dimension(:),allocatable::gkey,nkey,hkey
+
+  ! Peak-patch properties
+  real(dp),allocatable,dimension(:,:)::clump_size,center_of_mass,clump_velocity
+  real(dp),allocatable,dimension(:,:,:)::Icl_d_3by3,Icl_3by3
+  real(dp),allocatable,dimension(:)::max_dens,min_dens,av_dens
+  real(dp),allocatable,dimension(:)::thermal_support,kinetic_support,magnetic_support
+  real(dp),allocatable,dimension(:)::halo_mass,clump_mass,clump_vol
+  real(dp),allocatable,dimension(:)::clump_mass4
+  real(dp),allocatable,dimension(:,:)::peak_pos
+  real(dp),allocatable,dimension(:)::relevance
+  real(dp),allocatable,dimension(:)::Psurf,MagPsurf,MagTsurf
+  real(dp),allocatable,dimension(:)::grav_term, rad_term
+  real(dp),allocatable,dimension(:)::clump_check
+  real(dp),allocatable,dimension(:)::Icl,Icl_d,Icl_dd
+  integer,allocatable,dimension(:)::peak_cell,peak_cell_level
+  integer,allocatable,dimension(:)::n_cells,n_cells_halo,lev_peak,new_peak
+  integer,allocatable,dimension(:)::occupied,occupied_all,ind_halo
+  logical,allocatable,dimension(:)::contracting
+!  integer,allocatable,dimension(:)::form,form_all ! Tells whether a sink has to be formed within a clump.
+
+  ! Cell-above-the-threshold properties
+  real(dp),allocatable,dimension(:)::denp ! Density of the cells
+  integer,allocatable,dimension(:)::imaxp,icellp,levp,testp_sort ! Sort indices
+
+  ! Prime numbers for hash table
+  integer,dimension(0:30)::prime=(/2,3,7,13,23,53,97,193,389,769,1543,&
+       & 3079,6151,12289,24593,49157,98317,196613,393241,786433,1572869, &
+       & 3145739,6291469,12582917,25165843,50331653,100663319,201326611, &
+       & 402653189,805306457,1610612741/)
+
+end module clfind_commons
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+!----------------------------------------------------------------------------------------------
+! basic sparse matrix package for the use in the RAMSES clumpfinder
+! every line of the matrix is saved as a linked list
+! issues/improvements:
+!    -write a routine for quicker "maxmerging" two lines (outer loop calling "get_value" at each position 
+!     is very iniefficient)
+!    -disconnect a value which is set to zero rather than just writing zero into memory (not too bad since
+!    -have short lifetime)
+!    -reuse disconnected space
+!----------------------------------------------------------------------------------------------
+
+module sparse_matrix
+  use amr_commons
+  type sparse_mat
+     real(dp),allocatable,dimension(:)::val,maxval
+     integer,allocatable,dimension(:)::next,col,first,maxloc
+     integer::used,n,m
+  end type sparse_mat
+  integer,parameter::NSPARSEMAX=10000000
+contains
+  !----------------------------------------------------------------------------------------------
+  subroutine sparse_initialize(m,n,mat)
+    type(sparse_mat)::mat 
+    integer::m !size of the array
+    allocate(mat%val(1:NSPARSEMAX))
+    mat%val=0.
+    allocate(mat%next(1:NSPARSEMAX))
+    mat%next=0
+    allocate(mat%col(0:NSPARSEMAX))
+    mat%col=0
+    mat%col(0)=huge(1)
+    allocate(mat%first(1:m))
+    mat%first=0
+    allocate(mat%maxval(1:m))
+    mat%maxval=0.
+    allocate(mat%maxloc(1:m))
+    mat%maxloc=0
+    mat%used=0
+  end subroutine sparse_initialize
+  !----------------------------------------------------------------------------------------------
+
+  !----------------------------------------------------------------------------------------------
+  subroutine sparse_kill(mat)
+    type(sparse_mat)::mat 
+    deallocate(mat%val,mat%maxval)
+    deallocate(mat%next,mat%col,mat%first,mat%maxloc)
+  end subroutine sparse_kill
+  !----------------------------------------------------------------------------------------------
+  
+  !----------------------------------------------------------------------------------------------
+  subroutine set_value(i,j,new_value,mat)
+    type(sparse_mat)::mat 
+    integer::i,j !new entry
+    real(dp)::new_value
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! set new_value at position i,j in mat
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    integer::current,save_next
+
+    if(mat%used.eq.NSPARSEMAX)then
+       write(*,*)'Maximum size reached',mat%used
+       stop
+    endif
+
+    ! if corresponding line is empty
+    if (mat%first(i)==0) then
+       if(new_value.NE.0.)then
+          mat%used=mat%used+1
+          mat%first(i)=mat%used
+          mat%val(mat%used)=new_value
+          mat%col(mat%used)=j
+          mat%next(mat%used)=0
+       end if
+       return
+    end if
+
+    ! if element needs to be added to start of the list
+    if (mat%col(mat%first(i))>j) then
+       if(new_value.NE.0.)then
+          mat%used=mat%used+1
+          save_next=mat%first(i)
+          mat%first(i)=mat%used
+          mat%val(mat%used)=new_value
+          mat%col(mat%used)=j
+          mat%next(mat%used)=save_next
+       endif
+       return
+    end if
+
+    ! if first element needs to be replaced -> update max if needed
+    if (mat%col(mat%first(i)) == j) then
+       mat%val(mat%first(i))=new_value
+       return
+    end if
+
+    ! walk the line...
+    current=mat%first(i)
+    do  while( mat%col(mat%next(current)) < j )
+       current=mat%next(current)
+    end do
+    
+    ! there is already an existing value in place: overwrite and update max if needed
+    if ( mat%col(mat%next(current)) == j)then
+       mat%val(mat%next(current))=new_value
+       return
+    end if
+    
+    ! next points to zero -> add to the end
+    if ( mat%next(current) == 0)then
+       if(new_value.NE.0.)then
+          mat%used=mat%used+1
+          mat%next(current)=mat%used
+          mat%next(mat%used)=0
+          mat%col(mat%used)=j
+          mat%val(mat%used)=new_value       
+       endif
+       return
+    end if
+
+    ! next points not to zero -> link in between
+    if ( mat%next(current) > 0)then
+       if(new_value.NE.0.)then
+          mat%used=mat%used+1
+          save_next=mat%next(current)
+          mat%next(current)=mat%used
+          mat%next(mat%used)=save_next
+          mat%col(mat%used)=j
+          mat%val(mat%used)=new_value
+       endif
+       return
+    end if
+    
+    write(*,*)'ooops, I should not be here!'
+  end subroutine set_value
+  !----------------------------------------------------------------------------------------------
+
+  !----------------------------------------------------------------------------------------------
+  function get_value(i,j,mat)
+    type(sparse_mat)::mat 
+    integer::i,j 
+    real(dp)::get_value
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! gets the value of mat at position i,j
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    integer::current
+
+    ! empty line
+    if (mat%first(i)==0)then
+       get_value=0.
+       return
+    end if
+
+    ! walk the line...
+    current=mat%first(i)
+    do  while( mat%col(current) < j )
+       current=mat%next(current)
+    end do
+    
+    ! we are sitting at the right spot
+    if ( mat%col(current) == j)then
+       get_value= mat%val(current)
+       return
+    end if
+    
+    ! we are too far (means there was no entry for column j)
+    if ( mat%col(current) > j)then
+       get_value=0.
+       return
+    end if
+
+    write(*,*)'ooops, I should not be here!'
+  end function get_value
+  !----------------------------------------------------------------------------------------------
+
+end module sparse_matrix
+
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+module hydro_commons
+  use amr_parameters
+  use hydro_parameters
+  real(dp),allocatable,dimension(:,:)::uold,unew ! State vector and its update
+  real(dp),allocatable,dimension(:)  ::divu,enew ! Non conservative variables
+  real(dp)::mass_tot=0.0D0,mass_tot_0=0.0D0
+  real(dp)::ana_xmi,ana_xma,ana_ymi,ana_yma,ana_zmi,ana_zma
+  integer::nbins
+end module hydro_commons
+
+module const
+  use amr_parameters
+  real(dp)::bigreal = 1.0e+30
+  real(dp)::zero = 0.0
+  real(dp)::one = 1.0
+  real(dp)::two = 2.0
+  real(dp)::three = 3.0
+  real(dp)::four = 4.0
+  real(dp)::two3rd = 0.6666666666666667
+  real(dp)::half = 0.5
+  real(dp)::third = 0.33333333333333333
+  real(dp)::forth = 0.25
+  real(dp)::sixth = 0.16666666666666667
+end module const
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+module hydro_parameters
+  use amr_parameters
+
+  ! Number of independant variables
+#ifndef NENER
+  integer,parameter::nener=0
+#else
+  integer,parameter::nener=NENER
+#endif
+#ifndef NVAR
+  integer,parameter::nvar=ndim+2+nener
+#else
+  integer,parameter::nvar=NVAR
+#endif
+  ! Size of hydro kernel
+  integer,parameter::iu1=-1
+  integer,parameter::iu2=+4
+  integer,parameter::ju1=(1-ndim/2)-1*(ndim/2)
+  integer,parameter::ju2=(1-ndim/2)+4*(ndim/2)
+  integer,parameter::ku1=(1-ndim/3)-1*(ndim/3)
+  integer,parameter::ku2=(1-ndim/3)+4*(ndim/3)
+  integer,parameter::if1=1
+  integer,parameter::if2=3
+  integer,parameter::jf1=1
+  integer,parameter::jf2=(1-ndim/2)+3*(ndim/2)
+  integer,parameter::kf1=1
+  integer,parameter::kf2=(1-ndim/3)+3*(ndim/3)
+
+  ! Imposed boundary condition variables
+  real(dp),dimension(1:MAXBOUND,1:nvar)::boundary_var
+  real(dp),dimension(1:MAXBOUND)::d_bound=0.0d0
+  real(dp),dimension(1:MAXBOUND)::p_bound=0.0d0
+  real(dp),dimension(1:MAXBOUND)::u_bound=0.0d0
+  real(dp),dimension(1:MAXBOUND)::v_bound=0.0d0
+  real(dp),dimension(1:MAXBOUND)::w_bound=0.0d0
+#if NENER>0
+  real(dp),dimension(1:MAXBOUND,1:NENER)::prad_bound=0.0
+#endif
+#if NVAR>NDIM+2+NENER
+  real(dp),dimension(1:MAXBOUND,1:NVAR-NDIM-2-NENER)::var_bound=0.0
+#endif
+  ! Refinement parameters for hydro
+  real(dp)::err_grad_d=-1.0  ! Density gradient
+  real(dp)::err_grad_u=-1.0  ! Velocity gradient
+  real(dp)::err_grad_p=-1.0  ! Pressure gradient
+  real(dp)::floor_d=1.d-10   ! Density floor
+  real(dp)::floor_u=1.d-10   ! Velocity floor
+  real(dp)::floor_p=1.d-10   ! Pressure floor
+  real(dp)::mass_sph=0.0D0   ! mass_sph
+#if NENER>0
+  real(dp),dimension(1:NENER)::err_grad_prad=-1.0
+#endif
+#if NVAR>NDIM+2+NENER
+  real(dp),dimension(1:NVAR-NDIM-2)::err_grad_var=-1.0
+#endif
+  real(dp),dimension(1:MAXLEVEL)::jeans_refine=-1.0
+
+  ! Initial conditions hydro variables
+  real(dp),dimension(1:MAXREGION)::d_region=0.
+  real(dp),dimension(1:MAXREGION)::u_region=0.
+  real(dp),dimension(1:MAXREGION)::v_region=0.
+  real(dp),dimension(1:MAXREGION)::w_region=0.
+  real(dp),dimension(1:MAXREGION)::p_region=0.
+#if NENER>0
+  real(dp),dimension(1:MAXREGION,1:NENER)::prad_region=0.0
+#endif
+#if NVAR>NDIM+2+NENER
+  real(dp),dimension(1:MAXREGION,1:NVAR-NDIM-2-NENER)::var_region=0.0
+#endif
+  ! Hydro solver parameters
+  integer ::niter_riemann=10
+  integer ::slope_type=1
+  real(dp)::slope_theta=1.5d0
+  real(dp)::gamma=1.4d0
+  real(dp),dimension(1:512)::gamma_rad=1.33333333334d0
+  real(dp)::courant_factor=0.5d0
+  real(dp)::difmag=0.0d0
+  real(dp)::smallc=1.d-10
+  real(dp)::smallr=1.d-10
+  character(LEN=10)::scheme='muscl'
+  character(LEN=10)::riemann='llf'
+
+  ! Interpolation parameters
+  integer ::interpol_var=0
+  integer ::interpol_type=1
+
+  ! Passive variables index
+  integer::imetal=6
+  integer::idelay=6
+  integer::ixion=6
+  integer::ichem=6
+
+end module hydro_parameters
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+module poisson_commons 
+  use amr_commons
+  use poisson_parameters
+
+  real(dp),allocatable,dimension(:)  ::phi,phi_old       ! Potential
+  real(dp),allocatable,dimension(:)  ::rho               ! Density
+  real(dp),allocatable,dimension(:,:)::f                 ! 3-force
+
+  real(dp),allocatable,dimension(:)  ::rho_top   ! Density at last CIC level                                 
+
+  ! Multigrid lookup table for amr -> mg index mapping
+  integer, allocatable, dimension(:) :: lookup_mg   ! Lookup table
+
+  ! Communicator arrays for multigrid levels
+  type(communicator), allocatable, dimension(:,:) :: active_mg
+  type(communicator), allocatable, dimension(:,:) :: emission_mg
+
+  ! Minimum MG level
+  integer :: levelmin_mg
+
+  ! Multigrid safety switch
+  logical, allocatable, dimension(:) :: safe_mode
+
+  ! Multipole coefficients
+  real(dp),dimension(1:ndim+1)::multipole
+
+end module poisson_commons
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+module poisson_parameters
+  use amr_parameters
+
+  ! Convergence criterion for Poisson solvers
+  real(dp)::epsilon=1.0D-4
+
+  ! Type of force computation
+  integer ::gravity_type=0
+
+  ! Gravity parameters
+  real(dp),dimension(1:10)::gravity_params=0.0
+
+  ! Maximum level for CIC dark matter interpolation
+  integer :: cic_levelmax=0
+
+  ! Min level for CG solver
+  ! level < cg_levelmin uses fine multigrid
+  ! level >=cg_levelmin uses conjugate gradient
+  integer :: cg_levelmin=999
+
+  ! Gauss-Seidel smoothing sweeps for fine multigrid
+  integer, parameter :: ngs_fine   = 2
+  integer, parameter :: ngs_coarse = 2
+
+  ! Number of multigrid cycles for coarse levels *in safe mode*
+  !   1 is the fastest,
+  !   2 is slower but can give much better convergence in some cases
+  integer, parameter :: ncycles_coarse_safe = 1
+
+end module poisson_parameters
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+

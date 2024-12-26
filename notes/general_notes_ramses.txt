@@ -1,0 +1,32 @@
+GENERAL NOTES ON RAMSES
+
+This document contains my notes on ramses - how it works, what does what etc.
+
+
+- ic_files and initial conditions
+    ramses initially creates one particle per cell. The particles are then 
+    displaced according to a displacement field given by the initial 
+    condition file.
+    To compute a smaller simulation, compile and run 
+    /ramses/trunk/ramses/utils/f90/degrade_grafic.f90. The syntax is 
+    degrade_grafic.out directory-with-ic-files/ directory/where/output/goes
+
+- calculating npartmax
+    npartmax = Maximum number of particles that can be allocated during the 
+    run within each MPI process. The number of particles is nparttot resp. 
+    2^(levelmin)  (1 particle per grid initially created)
+    So calculate npartmax = ngridmax/ncpus.
+
+- memory usage
+    In the logfiles, you will find after each calculating step the amount of 
+    memory used. It should not exceed 4GB. If it does, raise the number of 
+    CPUs you use or execute a smaller simulation.
+
+- levelmax
+    the maximal value for levelmax seems to be 31 (starting with levelmin=7,
+    so maybe levelmin + 24?)
+
+- /ramses/trunk/ramses/utils
+    Contains visualising and postprocessing tools.
+
+
